@@ -177,7 +177,6 @@ namespace Common.Strings
             if (x.GetType() != typeof(string) || y.GetType() != typeof(string))
                 throw new ArgumentException("Only comparison of string values.");
 
-
             return Compare((string)x, (string)y);
         }
 

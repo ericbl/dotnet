@@ -8,7 +8,7 @@ namespace Common.Reflection
     /// </summary>
     /// <seealso cref="DescriptionAttribute" />
     [AttributeUsage(AttributeTargets.Property)]
-    public class PathDescriptionAttribute : DescriptionAttribute
+    public sealed class PathDescriptionAttribute : DescriptionAttribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PathDescriptionAttribute"/> class.

@@ -7,7 +7,7 @@ namespace Common.Reflection
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class IgnoreSerializationAttribute : Attribute
+    public sealed class IgnoreSerializationAttribute : Attribute
     {
     }
 }

@@ -71,7 +71,7 @@ namespace Common.SharePoint
         /// <returns>
         /// Number of items modified
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "design")]
         internal int UploadItemsToList(
             ClientContext clientContext,
             string listTitle,

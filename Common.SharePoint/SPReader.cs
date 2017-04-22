@@ -65,7 +65,7 @@ namespace Common.SharePoint
         /// The model container
         /// </returns>
         /// <exception cref="ArgumentNullException">Any parameter not set</exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "design")]
         private TModelContainer ReadAndConvertFilesAsStream(ClientContext clientContext, Func<List<FilePathOrStream>, TModelContainer> convertMethod)
         {
             if (clientContext == null)

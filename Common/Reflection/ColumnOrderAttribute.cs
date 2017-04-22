@@ -7,7 +7,7 @@ namespace Common.Reflection
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class ColumnOrderAttribute : Attribute
+    public sealed class ColumnOrderAttribute : Attribute
     {
         /// <summary>
         /// Gets the order.

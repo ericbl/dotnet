@@ -10,7 +10,7 @@ namespace Common.Strings
     /// <seealso cref="T:System.ComponentModel.DescriptionAttribute"/>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments", Justification = "not needed")]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class LocalizedDescriptionAttribute : DescriptionAttribute
+    public sealed class LocalizedDescriptionAttribute : DescriptionAttribute
     {
         private readonly string resourceKey;
         private readonly string keySuffix;
