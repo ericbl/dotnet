@@ -23,7 +23,7 @@ namespace Common.SharePoint
         /// <param name="credentialUserName">Name of the credential user.</param>
         /// <param name="inputFileFolder">The input file folder.</param>
         /// <param name="logger">The logger.</param>
-        public SPReader(Uri sharepointUri, string credentialUserName, string inputFileFolder, ILogger logger)
+        protected SPReader(Uri sharepointUri, string credentialUserName, string inputFileFolder, ILogger logger)
             : base(sharepointUri, credentialUserName, inputFileFolder, logger)
         {
         }
@@ -64,11 +64,15 @@ namespace Common.SharePoint
         /// <returns>
         /// The model container
         /// </returns>
-        /// <exception cref="System.ArgumentNullException">Any parameter not set</exception>
+        /// <exception cref="ArgumentNullException">Any parameter not set</exception>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private TModelContainer ReadAndConvertFilesAsStream(ClientContext clientContext, Func<List<FilePathOrStream>, TModelContainer> convertMethod)
         {
-            if (clientContext == null || convertMethod == null)
-                throw new ArgumentNullException();
+            if (clientContext == null)
+                throw new ArgumentNullException(nameof(clientContext));
+
+            if (convertMethod == null)
+                throw new ArgumentNullException(nameof(convertMethod));
 
             string xlsx = "xlsx";
             ListItemCollection listItems = GetExistingFilesInFolder(clientContext, xlsx);
@@ -80,10 +84,12 @@ namespace Common.SharePoint
                 string filename = item["FileLeafRef"].ToString();
                 string filePath = item["FileRef"].ToString();
                 DateTime writeDate = DateTime.Parse(item["Last_x0020_Modified"].ToString());
-                FileInformation fileInformation = ClientOM.File.OpenBinaryDirect(clientContext, filePath);
-                var memoryStream = new MemoryStream(); // must be disposed in a 2nd step!
-                IOUtils.CopyStream(fileInformation.Stream, memoryStream);
-                listOfStreams.Add(new FilePathOrStream(filename, memoryStream, writeDate));
+                using (FileInformation fileInformation = ClientOM.File.OpenBinaryDirect(clientContext, filePath))
+                {
+                    var memoryStream = new MemoryStream(); // must be disposed in a 2nd step!
+                    IOUtils.CopyStream(fileInformation.Stream, memoryStream);
+                    listOfStreams.Add(new FilePathOrStream(filename, memoryStream, writeDate));
+                }
             }
 
             // Convert stream

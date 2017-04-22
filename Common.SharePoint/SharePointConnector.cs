@@ -24,7 +24,7 @@ namespace Common.SharePoint
         /// <param name="sharePointFolder">The folder containing the input Xlsx files.</param>
         /// <param name="logger">The logger.</param>
         /// <exception cref="ArgumentNullException">sharepointUri or folder is null</exception>
-        public SharePointConnector(Uri sharepointUri, string credentialUserName, string sharePointFolder, ILogger logger)
+        protected SharePointConnector(Uri sharepointUri, string credentialUserName, string sharePointFolder, ILogger logger)
         {
             if (sharepointUri == null)
                 throw new ArgumentNullException(nameof(sharepointUri));
@@ -125,8 +125,11 @@ namespace Common.SharePoint
         /// <exception cref="ArgumentNullException">Any parameter null</exception>
         protected ListItemCollection GetExistingFilesInFolder(ClientContext clientContext, string fileExtension)
         {
-            if (clientContext == null || string.IsNullOrEmpty(fileExtension))
-                throw new ArgumentNullException();
+            if (clientContext == null)
+                throw new ArgumentNullException(nameof(clientContext));
+
+            if (string.IsNullOrEmpty(fileExtension))
+                throw new ArgumentNullException(nameof(fileExtension));
 
             List documentList = clientContext.Web.Lists.GetByTitle("Dokumente");
             CamlQuery camlQuery = new CamlQuery();

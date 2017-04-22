@@ -9,8 +9,8 @@ namespace Common.Reflection.Tests
         public void GetPublicGenericPropertiesChangedTest1()
         {
             // Define objects to test
-            Function func1 = new Function { Id = 1, Description = "func1" };
-            Function func2 = new Function { Id = 2, Description = "func2" };
+            OrgaFunction func1 = new OrgaFunction { Id = 1, Description = "func1" };
+            OrgaFunction func2 = new OrgaFunction { Id = 2, Description = "func2" };
             FunctionAssignment funcAss1 = new FunctionAssignment
             {
                 Function = func1,

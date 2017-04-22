@@ -11,7 +11,7 @@ namespace Common.Network.Tests
         private const string myEmail3 = "fillwithYour2ndEmail@myDomain.com";
 
         [TestMethod()]
-        public void CreateAndSendEMailOutlookTest()
+        public void CreateAndSendEmailOutlookTest()
         {
             NetworkCredential networkCredential = Windows.WebCredentialMgr.GetCredential(myEmail1);
             if (networkCredential != null)
@@ -22,7 +22,7 @@ namespace Common.Network.Tests
         }
 
         [TestMethod()]
-        public void CreateAndSendEMailLocalTest()
+        public void CreateAndSendEmailLocalTest()
         {
             Email email = new Email(myEmail1, myEmail3, "test email", "test email from local server", null);
             email.SendInTryCatch();

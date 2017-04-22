@@ -41,7 +41,7 @@
         /// </summary>
         /// <param name="files">The files.</param>
         /// <returns><c>True</c> if successfully uploaded</returns>
-        public bool UploadFiles(List<FilePathOrStream> files)
+        public bool UploadFiles(IList<FilePathOrStream> files)
         {
             return PrepareContextAndRunActionOnSP(context => UploadFiles(context, files));
         }
@@ -70,7 +70,7 @@
         /// <param name="clientContext">The client context.</param>
         /// <param name="files">The files.</param>
         /// <returns><c>True</c> if successfully uploaded</returns>
-        private bool UploadFiles(ClientOM.ClientContext clientContext, List<FilePathOrStream> files)
+        private bool UploadFiles(ClientOM.ClientContext clientContext, IList<FilePathOrStream> files)
         {
             foreach (FilePathOrStream file in files)
             {

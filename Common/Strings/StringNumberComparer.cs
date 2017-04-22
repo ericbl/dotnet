@@ -168,15 +168,15 @@ namespace Common.Strings
         /// <exception cref="ArgumentException">Only comparison of string values.</exception>
         public int Compare(object x, object y)
         {
-            if (x == null || y == null)
-            {
-                throw new ArgumentNullException();
-            }
+            if (x == null)
+                throw new ArgumentNullException(nameof(x));
+
+            if (y == null)
+                throw new ArgumentNullException(nameof(y));
 
             if (x.GetType() != typeof(string) || y.GetType() != typeof(string))
-            {
                 throw new ArgumentException("Only comparison of string values.");
-            }
+
 
             return Compare((string)x, (string)y);
         }

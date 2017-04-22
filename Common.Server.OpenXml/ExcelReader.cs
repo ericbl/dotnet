@@ -31,6 +31,7 @@ namespace Common.Server.OpenXml
         /// A list of T
         /// </returns>
         /// <exception cref="FileNotFoundException">filePath does not exists</exception>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "per design")]
         public static IList<T> GetDataToList<T>(string filePath)
             where T : new()
         {
@@ -145,7 +146,7 @@ namespace Common.Server.OpenXml
 
             if (wsPart == null)
             {
-                throw new Exception("No worksheet.");
+                throw new ArgumentNullException($"No worksheet with name {sheetName}.");
             }
             else
             {
@@ -173,9 +174,6 @@ namespace Common.Server.OpenXml
 
                 //Used for sheet row data to be added through delegation.
                 var rowData = new List<string>();
-
-                //Do data in rows
-                string cellLetter = string.Empty;
 
                 // Get object properties once
                 var properties = Utils.GetAllFieldsAndPropertiesOfClassOrdered(typeof(T));

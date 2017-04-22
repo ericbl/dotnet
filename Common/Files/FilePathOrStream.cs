@@ -112,7 +112,6 @@ namespace Common.Files
         }
         #endregion
 
-
         /// <summary>
         /// Gets the file name without extension.
         /// From Path.GetFileNameWithoutExtension(filePath) https://referencesource.microsoft.com/#mscorlib/system/io/path.cs,e36b3edc1f3e2c8d

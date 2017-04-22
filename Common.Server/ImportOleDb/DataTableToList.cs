@@ -20,7 +20,7 @@ namespace Common.Server.ImportOleDb
         /// <param name="sheetIndex">Index of the sheet.</param>
         /// <param name="errorLogging">The error logging.</param>
         /// <returns>a list of generic items if read; null otherwise</returns>
-        public static List<T> ReadSheet(DataSet dataset, IFormatProvider formatProvider, int sheetIndex, StringBuilderWithUniqueMsg errorLogging)
+        public static IList<T> ReadSheet(DataSet dataset, IFormatProvider formatProvider, int sheetIndex, StringBuilderWithUniqueMsg errorLogging)
         {
             if (dataset != null && dataset.Tables.Count > sheetIndex)
             {
@@ -40,7 +40,7 @@ namespace Common.Server.ImportOleDb
         /// <returns>
         /// List of objects created by the Sheet Loader
         /// </returns>
-        public static List<T> ReadSheet(DataSet dataset, IFormatProvider formatProvider, string sheetName, StringBuilderWithUniqueMsg errorLogging)
+        public static IList<T> ReadSheet(DataSet dataset, IFormatProvider formatProvider, string sheetName, StringBuilderWithUniqueMsg errorLogging)
         {
             if (dataset != null && dataset.Tables.Contains(sheetName))
             {
@@ -57,7 +57,7 @@ namespace Common.Server.ImportOleDb
         /// <param name="formatProvider">The format provider.</param>
         /// <param name="errorLogging">The error logging.</param>
         /// <returns>The list of objects</returns>
-        private static List<T> ReadSheet(DataTable table, IFormatProvider formatProvider, StringBuilderWithUniqueMsg errorLogging)
+        private static IList<T> ReadSheet(DataTable table, IFormatProvider formatProvider, StringBuilderWithUniqueMsg errorLogging)
         {
             var sheet = new Sheet<T>(table, formatProvider);
             var result = sheet.Load();

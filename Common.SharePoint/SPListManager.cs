@@ -71,6 +71,7 @@ namespace Common.SharePoint
         /// <returns>
         /// Number of items modified
         /// </returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
         internal int UploadItemsToList(
             ClientContext clientContext,
             string listTitle,
@@ -198,10 +199,7 @@ namespace Common.SharePoint
                 if (fieldType == null)
                     continue;
 
-                Field field = list.Fields.AddFieldAsXml(
-                    $"<Field DisplayName='{prop.Name}' Type='{fieldType}' />",
-                    true,
-                    AddFieldOptions.DefaultValue);
+                list.Fields.AddFieldAsXml($"<Field DisplayName='{prop.Name}' Type='{fieldType}' />", true, AddFieldOptions.DefaultValue);
             }
 
             clientContext.ExecuteQuery();
@@ -268,7 +266,7 @@ namespace Common.SharePoint
             return items;
         }
 
-        private List LoadSPListOnlyWithoutExecution(ClientContext clientContext, string listTitle)
+        private static List LoadSPListOnlyWithoutExecution(ClientContext clientContext, string listTitle)
         {
             var list = clientContext.Web.Lists.GetByTitle(listTitle);
             // load the list and its description.

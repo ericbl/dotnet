@@ -134,7 +134,7 @@ namespace Common.Server.ImportOleDb
         /// <typeparam name="T">Type of the object</typeparam>
         /// <param name="sheetIndex">Index of the sheet.</param>
         /// <returns>The list of object</returns>
-        public List<T> ReadSheet<T>(int sheetIndex)
+        public IList<T> ReadSheet<T>(int sheetIndex)
             where T : IDataTableToList
         {
             if (this.DataSet == null)
@@ -151,7 +151,7 @@ namespace Common.Server.ImportOleDb
         /// <typeparam name="T">Type of the object</typeparam>
         /// <param name="sheetName">Name of the sheet.</param>
         /// <returns>List of objects created by the Sheet Loader</returns>
-        public List<T> ReadSheet<T>(string sheetName)
+        public IList<T> ReadSheet<T>(string sheetName)
             where T : IDataTableToList
         {
             if (this.DataSet == null)

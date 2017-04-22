@@ -63,7 +63,7 @@ namespace Common.Server.ImportOleDb
         /// Loads the data from the datatable and generate objects. Continue if an error occurs and set the ErrorLogging
         /// </summary>
         /// <returns>A list of generated objects</returns>
-        public List<T> Load()
+        public IList<T> Load()
         {
             IEnumerable<ColumnAttribute> columns = GetColumnList();
             rows.Clear();

@@ -7,7 +7,7 @@ namespace Common.Server.ImportOleDb
     /// Object Attribute for an Excel column
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    public class ColumnAttribute : Attribute
+    public sealed class ColumnAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ColumnAttribute"/> class.

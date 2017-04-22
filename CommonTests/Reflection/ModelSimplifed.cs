@@ -67,13 +67,13 @@ namespace Common.Reflection.Tests
     {
     }
 
-    public class Function : DescriptionWithIdBase
+    public class OrgaFunction : DescriptionWithIdBase
     {
     }
 
-    public class FunctionAssignment : AssignmentBase<Function>
+    public class FunctionAssignment : AssignmentBase<OrgaFunction>
     {
-        public Function Function
+        public OrgaFunction Function
         {
             get { return DescriptionWithId; }
             set { DescriptionWithId = value; }
