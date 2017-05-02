@@ -1,4 +1,5 @@
 ﻿using Common.Files;
+using Common.Generic;
 using Common.Logging;
 using Microsoft.SharePoint.Client;
 using System;
@@ -12,20 +13,19 @@ namespace Common.SharePoint
     /// Generic base class to read files from SharePoint
     /// </summary>
     /// <typeparam name="TModelContainer">Type of the model</typeparam>
-    /// <seealso cref="Common.SharePoint.SharePointConnector" />
-    public abstract class SPReader<TModelContainer> : SharePointConnector
+    /// <seealso cref="Common.SharePoint.SPConnector" />
+    public abstract class SPReader<TModelContainer>
         where TModelContainer : class
     {
+        private readonly SPConnector spConnector;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SPReader{TModelContainer}"/> class.
         /// </summary>
-        /// <param name="sharepointUri">The sharepoint URI.</param>
-        /// <param name="credentialUserName">Name of the credential user.</param>
-        /// <param name="inputFileFolder">The input file folder.</param>
-        /// <param name="logger">The logger.</param>
-        protected SPReader(Uri sharepointUri, string credentialUserName, string inputFileFolder, ILogger logger)
-            : base(sharepointUri, credentialUserName, inputFileFolder, logger)
+        /// <param name="spParameter">The sp parameter.</param>
+        protected SPReader(SPParameter spParameter)
         {
+            spConnector = new SPConnector(spParameter);
         }
 
         /// <summary>
@@ -47,26 +47,28 @@ namespace Common.SharePoint
         /// Reads the input streams.
         /// </summary>
         /// <param name="convertMethod">The convert method.</param>
+        /// <param name="fileExtension">The file extension without the point, e.g. 'xlsx'.</param>
         /// <returns>
-        /// the container of the data read from SP
+        /// the container of the data read from SP.
         /// </returns>
-        protected TModelContainer ReadInputStreamsFromSP(Func<List<FilePathOrStream>, TModelContainer> convertMethod)
+        protected TModelContainer ReadInputStreamsFromSP(Func<List<FilePathOrStream>, TModelContainer> convertMethod, string fileExtension)
         {
-            return PrepareContextAndRunActionOnSP(clientContext => ReadAndConvertFilesAsStream(clientContext, convertMethod));
+            return spConnector.PrepareContextAndRunActionOnSP(clientContext => ReadAndConvertFilesAsStream(clientContext, convertMethod, fileExtension));
         }
 
         /// <summary>
-        /// Reads files as stream, convert them to the output container and dispose those streams.
-        /// Inspired from https://msdn.microsoft.com/en-us/library/ee956524(office.14).aspx#SP2010ClientOMOpenXml_Retrieving
+        /// Reads files as stream, convert them to the output container and dispose those streams. Inspired from https://msdn.microsoft.com/en-
+        /// us/library/ee956524(office.14).aspx#SP2010ClientOMOpenXml_Retrieving.
         /// </summary>
+        /// <exception cref="ArgumentNullException">Any parameter not set.</exception>
         /// <param name="clientContext">The client context.</param>
         /// <param name="convertMethod">The convert method.</param>
+        /// <param name="fileExtension">The file extension without the point, e.g. 'xlsx'.</param>
         /// <returns>
-        /// The model container
+        /// The model container.
         /// </returns>
-        /// <exception cref="ArgumentNullException">Any parameter not set</exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "design")]
-        private TModelContainer ReadAndConvertFilesAsStream(ClientContext clientContext, Func<List<FilePathOrStream>, TModelContainer> convertMethod)
+        private TModelContainer ReadAndConvertFilesAsStream(ClientContext clientContext, Func<List<FilePathOrStream>, TModelContainer> convertMethod, string fileExtension)
         {
             if (clientContext == null)
                 throw new ArgumentNullException(nameof(clientContext));
@@ -74,31 +76,27 @@ namespace Common.SharePoint
             if (convertMethod == null)
                 throw new ArgumentNullException(nameof(convertMethod));
 
-            string xlsx = "xlsx";
-            ListItemCollection listItems = GetExistingFilesInFolder(clientContext, xlsx);
+            ListItemCollection listItems = spConnector.GetExistingFilesInFolder(clientContext, fileExtension);
+            TModelContainer result = null;
 
-            var listOfStreams = new List<FilePathOrStream>();
-
-            foreach (ListItem item in listItems)
+            using (var listOfStreams = new DisposableList<FilePathOrStream>())
             {
-                string filename = item["FileLeafRef"].ToString();
-                string filePath = item["FileRef"].ToString();
-                DateTime writeDate = DateTime.Parse(item["Last_x0020_Modified"].ToString());
-                using (FileInformation fileInformation = ClientOM.File.OpenBinaryDirect(clientContext, filePath))
+                foreach (ListItem item in listItems)
                 {
-                    var memoryStream = new MemoryStream(); // must be disposed in a 2nd step!
-                    IOUtils.CopyStream(fileInformation.Stream, memoryStream);
-                    listOfStreams.Add(new FilePathOrStream(filename, memoryStream, writeDate));
+                    string filename = item["FileLeafRef"].ToString();
+                    string filePath = item["FileRef"].ToString();
+                    DateTime writeDate = DateTime.Parse(item["Last_x0020_Modified"].ToString());
+                    using (FileInformation fileInformation = ClientOM.File.OpenBinaryDirect(clientContext, filePath))
+                    {
+                        var memoryStream = new MemoryStream(); // must be disposed in a 2nd step!
+                        IOUtils.CopyStream(fileInformation.Stream, memoryStream);
+                        listOfStreams.Add(new FilePathOrStream(filename, memoryStream, writeDate));
+                    }
                 }
-            }
 
-            // Convert stream
-            TModelContainer result = convertMethod(listOfStreams);
-            // dispose streams!
-            foreach (var file in listOfStreams)
-            {
-                file.Dispose();
-            }
+                // Convert streams
+                result = convertMethod(listOfStreams);
+            } // dispose streams!
 
             return result;
         }

@@ -1,38 +1,33 @@
 ﻿using Microsoft.SharePoint.Client;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Common.SharePoint
 {
     /// <summary>
-    /// List container with metadata
+    /// List container with meta data
     /// </summary>
     /// <typeparam name="T">Type of the objects in the list</typeparam>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    public class ListWithMetadata<T, TKey>
+    public class ListWithMetadata<T>
+        where T : ISPListItem
     {
         #region List and its own properties and Ctor
         private const string SourceDateTimeName = "SourceDate";
         private readonly IList<T> list;
-        private readonly Func<T, TKey> keySelector;
+        private readonly Dictionary<string, string> queryFilter;
         private DateTime sourceDateUTC;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ListWithMetadata{T, TKey}" /> class.
+        /// Initializes a new instance of the <see cref="ListWithMetadata{T}" /> class.
         /// </summary>
-        /// <param name="list">The list.</param>
-        /// <param name="sourceDate">The source date, will be converted to UTC for SharePoint.</param>
-        /// <param name="keySelector">The key selector.</param>
-        public ListWithMetadata(IList<T> list = null, DateTime? sourceDate = null, Func<T, TKey> keySelector = null)
+        /// <param name="sourceDate"> (Optional) The source date, will be converted to UTC for SharePoint.</param>
+        /// <param name="queryFilter">(Optional) The query filter.</param>
+        public ListWithMetadata(DateTime? sourceDate = null, Dictionary<string, string> queryFilter = null)
         {
-            if (list != null)
-                this.list = list;
-            else
-                this.list = new List<T>();
+            this.list = new List<T>();
             if (sourceDate.HasValue)
                 this.sourceDateUTC = sourceDate.Value.ToUniversalTime();
-            this.keySelector = keySelector;
+            this.queryFilter = queryFilter;
         }
 
         /// <summary>
@@ -56,32 +51,17 @@ namespace Common.SharePoint
         {
             get { return sourceDateUTC.ToLocalTime(); }
         }
-        #endregion
-
-        #region Important properties of T for List
-        /// <summary>
-        /// Gets or sets the name of the identifier field.
-        /// </summary>
-        /// <value>
-        /// The name of the identifier field.
-        /// </value>
-        public string IdFieldName { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the second identifier field.
+        /// Gets the query filter.
         /// </summary>
         /// <value>
-        /// The name of the second identifier field.
+        /// The query filter.
         /// </value>
-        public string SecondIdFieldName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value of the second identifier field to filter only list item matching it.
-        /// </summary>
-        /// <value>
-        /// The value of the second identifier field to filter only list item matching it.
-        /// </value>
-        public string SecondIdFieldValueFilter { get; set; }
+        public Dictionary<string, string> QueryFilter
+        {
+            get { return queryFilter; }
+        }
         #endregion
 
         /// <summary>
@@ -122,17 +102,6 @@ namespace Common.SharePoint
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Gets the dictionary from list.
-        /// </summary>
-        /// <returns>The converted dictionary</returns>
-        internal Dictionary<TKey, T> GetDictionaryFromList()
-        {
-            if (keySelector == null)
-                return null;
-            return List.ToDictionary(keySelector);
         }
     }
 }

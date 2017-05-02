@@ -105,11 +105,14 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ISPListItem.cs" />
     <Compile Include="ListWithMetadata.cs" />
+    <Compile Include="SPConnectorList.cs" />
     <Compile Include="SPListManager.cs" />
+    <Compile Include="SPParameter.cs" />
     <Compile Include="SPReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SharePointConnector.cs" />
+    <Compile Include="SPConnector.cs" />
     <Compile Include="SPWriter.cs" />
   </ItemGroup>
   <ItemGroup>

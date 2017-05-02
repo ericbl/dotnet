@@ -8,21 +8,19 @@
     using ClientOM = Microsoft.SharePoint.Client;
 
     /// <summary>
-    /// Base class to write document or list into SharePoint Online
+    /// Upload file or stream to SharePoint.
     /// </summary>
-    /// <seealso cref="Common.SharePoint.SharePointConnector" />
-    public class SPWriter : SharePointConnector
+    public class SPWriter
     {
+        private readonly SPConnector spConnector;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SPWriter" /> class.
         /// </summary>
-        /// <param name="sharepointUri">The URI of the SharePoint site. Must be set!</param>
-        /// <param name="credentialUserName">Name of the credential user.</param>
-        /// <param name="sharePointFolder">The folder to upload files.</param>
-        /// <param name="logger">The logger.</param>
-        public SPWriter(System.Uri sharepointUri, string credentialUserName, string sharePointFolder, ILogger logger)
-            : base(sharepointUri, credentialUserName, sharePointFolder, logger)
+        /// <param name="spParameter">The sp parameter.</param>
+        public SPWriter(SPParameter spParameter)
         {
+            spConnector = new SPConnector(spParameter);
         }
 
         /// <summary>
@@ -43,25 +41,7 @@
         /// <returns><c>True</c> if successfully uploaded</returns>
         public bool UploadFiles(IList<FilePathOrStream> files)
         {
-            return PrepareContextAndRunActionOnSP(context => UploadFiles(context, files));
-        }
-
-        /// <summary>
-        /// Uploads the items to list.
-        /// </summary>
-        /// <typeparam name="T">Type of the objects in the list</typeparam>
-        /// <param name="listTitle">The list title.</param>
-        /// <param name="listSource">The list source.</param>
-        /// <param name="createListIfNotExists">if set to <c>true</c> create a list if it does not exist.</param>
-        /// <returns>
-        /// Number of items modified
-        /// </returns>
-        public int UploadItemsToList<T>(string listTitle, ListWithMetadata<T, int> listSource, bool createListIfNotExists)
-            where T : class, new()
-        {
-            var spListMgr = new SPListManager<T>();
-            return PrepareContextAndRunActionOnSP(context => spListMgr.UploadItemsToList(
-                context, listTitle, listSource, createListIfNotExists, Logger));
+            return spConnector.PrepareContextAndRunActionOnSP(context => UploadFiles(context, files));
         }
 
         /// <summary>
@@ -92,7 +72,7 @@
 
         private void SaveStreamToSP(ClientOM.ClientContext clientContext, string fileName, Stream stream)
         {
-            ClientOM.File.SaveBinaryDirect(clientContext, SharepointFolder + Path.AltDirectorySeparatorChar + fileName, stream, true);
+            ClientOM.File.SaveBinaryDirect(clientContext, spConnector.SharepointFolder + Path.AltDirectorySeparatorChar + fileName, stream, true);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Common.Generic;
 using Common.Logging;
+using Common.Reflection;
 using Microsoft.SharePoint.Client;
 using System;
 using System.Collections.Generic;
@@ -13,39 +14,48 @@ namespace Common.SharePoint
     /// https://msdn.microsoft.com/en-us/library/office/fp179912(v=office.15).aspx
     /// </summary>
     /// <typeparam name="T">Type of the object in the list</typeparam>
-    public class SPListManager<T>
-        where T : class, new()
+    internal class SPListManager<T>
+        where T : class, ISPListItem, new()
     {
+        // Class attributes depending only from the input object, but NONE from SharePoint objects which are linked to their context!
         private readonly Dictionary<string, PropertyInfo> objectPropertiesPerName;
-        private readonly int itemCountToProcessLimit = 10;
-        private List spList;
+        private readonly int itemCountToProcessLimit;
+        private readonly ILogger logger;
         private int itemCountToProcess = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SPListManager{T}"/> class.
         /// </summary>
-        public SPListManager()
+        /// <param name="logger">                   The logger.</param>
+        /// <param name="filterWithIgnoreAttribute">True will read the <seealso cref="IgnoreSerializationAttribute"/>
+        /// and ignore the properties with that attribute.</param>
+        /// <param name="nbrItemsToPushTogether">   (Optional) Number of items to push together to SharePoint to avoid too many requests.</param>
+        public SPListManager(ILogger logger, bool filterWithIgnoreAttribute, int nbrItemsToPushTogether = 10)
         {
+            this.logger = logger;
+            itemCountToProcessLimit = nbrItemsToPushTogether;
             Type type = typeof(T);
-            objectPropertiesPerName = Reflection.Utils.GetAllPropertiesOfClass(type).ToDictionary(p => p.Name);
+            objectPropertiesPerName = Utils.GetAllPropertiesOfClass(type, filterWithIgnoreAttribute).ToDictionary(p => p.Name);
         }
 
         #region Internal API to read and generate the objects or update a list
+
         /// <summary>
         /// Read the SharePoint list and generate objects from the list items.
         /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <param name="clientContext">The client context.</param>
-        /// <param name="listTitle">The list title.</param>
+        /// <param name="listTitle">    The list title.</param>
+        /// <param name="queryFilter">  A filter specifying the query.</param>
         /// <returns>
-        /// List of created objects
+        /// List of created objects.
         /// </returns>
-        internal ListWithMetadata<T, TKey> TransformSPListToObjects<TKey>(ClientContext clientContext, string listTitle)
+        internal ListWithMetadata<T> TransformSPListToObjects(ClientContext clientContext, string listTitle, Dictionary<string, string> queryFilter)
         {
-            var resultList = new ListWithMetadata<T, TKey>();
+            var resultList = new ListWithMetadata<T>(queryFilter: queryFilter);
 
             // Read list
-            ListItemCollection items = LoadSPListAndItems(clientContext, listTitle);
+            var spList = LoadSPList(clientContext, listTitle, false);
+            ListItemCollection items = LoadSPListItems(clientContext, spList, queryFilter);
 
             // Set description
             resultList.SetListProperties(spList.RootFolder.Properties);
@@ -63,22 +73,27 @@ namespace Common.SharePoint
         /// <summary>
         /// Uploads the items to list.
         /// </summary>
-        /// <param name="clientContext">The client context.</param>
-        /// <param name="listTitle">The list title.</param>
-        /// <param name="listSource">The list source.</param>
+        /// <param name="clientContext">        The client context.</param>
+        /// <param name="listTitle">            The list title.</param>
+        /// <param name="listSource">           The list source.</param>
         /// <param name="createListIfNotExists">if set to <c>true</c> create a list if it does not exist.</param>
-        /// <param name="logger">The logger.</param>
         /// <returns>
-        /// Number of items modified
+        /// Number of items modified.
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "design")]
-        internal int UploadItemsToList(
-            ClientContext clientContext,
-            string listTitle,
-            ListWithMetadata<T, int> listSource,
-            bool createListIfNotExists,
-            ILogger logger)
+        internal int AddOrUploadItemsToList(ClientContext clientContext, string listTitle, ListWithMetadata<T> listSource, bool createListIfNotExists)
         {
+            if (clientContext == null)
+                throw new ArgumentNullException(nameof(clientContext));
+
+            if (string.IsNullOrEmpty(listTitle))
+                throw new ArgumentNullException(nameof(listTitle));
+
+            if (listSource == null || listSource.List == null)
+                throw new ArgumentNullException(nameof(listSource));
+
+            if (listSource.List.Count == 0)
+                return 0;
+
             if (createListIfNotExists)
             {
                 clientContext.Load(clientContext.Web.Lists);
@@ -88,8 +103,8 @@ namespace Common.SharePoint
                     CreateList(clientContext, listTitle, listTitle, objectPropertiesPerName.Values);
             }
 
-            // Read list
-            ListItemCollection items = LoadSPListAndItems(clientContext, listTitle);
+            // load the list hier as local variable since it depends from the Context!
+            var spList = LoadSPList(clientContext, listTitle, true);
 
             // Update the custom description of the list
             if (listSource.SetSourceDateProperty(spList.RootFolder.Properties))
@@ -100,69 +115,124 @@ namespace Common.SharePoint
 
             HashSet<int> idUpdated = new HashSet<int>();
             int itemsModified = 0;
-            var itemsToDelete = new List<ListItem>();
 
-            //var filteredItems = items.Where(u => u["Company"] != null && (u["Company"].ToString() == "DARO" || u["Company"].ToString() == "DKM")).ToList();
-            //itemsToDelete.AddRange(filteredItems);
-            var dictSource = listSource.GetDictionaryFromList();
-
-            foreach (ListItem listItem in items)
+            if (listSource.QueryFilter != null)
             {
-                // Get only for id!
-                var idObj = listItem[listSource.IdFieldName];
-                int itemId;
-                if (idObj != null && int.TryParse(idObj.ToString(), out itemId))
+                // item source in dictionary
+                Dictionary<int, T> dictSource = listSource.List.Where(src => src.ID > 0).ToDictionary(src => src.ID);
+
+                // Read list
+                ListItemCollection items = LoadSPListItems(clientContext, spList, listSource.QueryFilter);
+                var itemsToDelete = new List<ListItem>();
+
+                foreach (ListItem listItem in items)
                 {
-                    if (!string.IsNullOrEmpty(listSource.SecondIdFieldName) && !string.IsNullOrEmpty(listSource.SecondIdFieldValueFilter))
+                    // Get source item for that ID
+                    if (dictSource.ContainsKey(listItem.Id))
                     {
-                        object secondValueItem = listItem[listSource.SecondIdFieldName];
-                        bool filterOnSecondField = secondValueItem != null && secondValueItem.ToString() == listSource.SecondIdFieldValueFilter;
-                        if (!filterOnSecondField)
-                        {   // ad id to the set but ignore it from the update since the second requested field does not match!
-                            idUpdated.Add(itemId);
-                            continue;
-                        }
-                    }
-
-                    if (dictSource.ContainsKey(itemId) && !idUpdated.Contains(itemId))
-                    {   // only one item per Id allowed!
-                        var itemSource = dictSource[itemId];
-                        if (UpdateSPListItem(clientContext, itemSource, itemId, listItem, true, logger))
+                        if (UpdateSPListItem(clientContext, dictSource[listItem.Id], listItem, true))
                             itemsModified++;
-                        idUpdated.Add(itemId);
+                        idUpdated.Add(listItem.Id);
                     }
-                    else
-                    {
-                        // delete row with Id not found in the source or if
-                        itemsToDelete.Add(listItem);
-                    }
+
+                    //else
+                    //{
+                    //    // delete row with Id not found in the source
+                    //    itemsToDelete.Add(listItem);
+                    //}
                 }
-            }
 
-            // Ensure all items get committed
-            ExecuteQueryAndResetCounter(clientContext);
+                // Ensure all items get committed
+                ExecuteQueryAndWait(clientContext);
 
-            // Delete items
-            if (itemsToDelete.Count > 0)
-            {
-                itemsModified += itemsToDelete.Count;
-                itemsToDelete.DeleteItemsInList(item => item.DeleteObject());
-                ExecuteQueryAndResetCounter(clientContext);  // delete all at once
+                // Delete items
+                //if (itemsToDelete.Count > 0)
+                //{
+                //    itemsModified += itemsToDelete.Count;
+                //    itemsToDelete.DeleteItemsInList(item => item.DeleteObject());
+                //    ExecuteQueryAndWait(clientContext);  // delete all at once
+                //}
             }
 
             // Create items
             var itemCreateInfo = new ListItemCreationInformation();
-            var allNewIds = dictSource.Keys.Where(id => !idUpdated.Contains(id)).ToList();
-            foreach (int id in allNewIds)
+            foreach (T itemSource in listSource.List)
             {
                 // id defined in the source but not found in the current SP list: create item!
-                var newItem = spList.AddItem(itemCreateInfo);
-                if (UpdateSPListItem(clientContext, dictSource[id], id, newItem, false, logger))
+                ListItem newItem = spList.AddItem(itemCreateInfo);
+                if (UpdateSPListItem(clientContext, itemSource, newItem, false))
                     itemsModified++;
             }
 
             // Ensure all items get committed
-            ExecuteQueryAndResetCounter(clientContext);
+            ExecuteQueryAndWait(clientContext);
+
+            logger.WriteInfo($"{itemsModified} items have been updated to the SharePoint list {listTitle}.");
+
+            return itemsModified;
+        }
+
+        /// <summary>
+        /// Updates the given items in the list identified by their ID by setting the given property with the given value.
+        /// </summary>
+        /// <param name="clientContext">        The client context.</param>
+        /// <param name="listTitle">            The list title.</param>
+        /// <param name="idsOflistItemToUpdate">The list items to update.</param>
+        /// <param name="propertyName">         Name of the property.</param>
+        /// <param name="propertyValue">        The property value.</param>
+        /// <returns>
+        /// Number of items modified.
+        /// </returns>
+        internal int UpdateAPropertyOnList(ClientContext clientContext, string listTitle, IList<int> idsOflistItemToUpdate, string propertyName, string propertyValue)
+        {
+            if (clientContext == null)
+                throw new ArgumentNullException(nameof(clientContext));
+
+            if (string.IsNullOrEmpty(listTitle))
+                throw new ArgumentNullException(nameof(listTitle));
+
+            if (string.IsNullOrEmpty(propertyName))
+                throw new ArgumentNullException(nameof(propertyName));
+
+            if (idsOflistItemToUpdate == null || idsOflistItemToUpdate.Count == 0)
+                return 0;  // do not do anything for empty list!
+
+            int itemsModified = 0;
+            var spList = LoadSPList(clientContext, listTitle, true);
+
+            IList<string> propertiesToLoad = new List<string> { propertyName };
+            // Get the items filtered by the ids. The id list shall not be empty, otherwise, all items will be retrieved here!
+            var itemsToUpdate = LoadSPListItems(clientContext, spList, "ID", idsOflistItemToUpdate, null);
+
+            foreach (ListItem targetListItem in itemsToUpdate)
+            {
+                if (targetListItem.FieldValues.ContainsKey(propertyName))
+                {
+                    targetListItem[propertyName] = propertyValue;
+                    targetListItem.Update();
+                    itemsModified++;
+                }
+            }
+
+            /*
+            foreach (var id in idsOflistItemToUpdate)
+            {
+                ListItem targetListItem = spList.GetItemById(id);
+                clientContext.Load(targetListItem, item => item[propertyName]);
+                clientContext.ExecuteQuery();
+                if (targetListItem.FieldValues.ContainsKey(propertyName))
+                {
+                    targetListItem[propertyName] = propertyValue;
+                    targetListItem.Update();
+                    itemsModified++;
+                }
+            }*/
+
+            if (itemsModified > 0)
+            {
+                ExecuteQueryAndWait(clientContext);
+                logger.WriteInfo($"The property {propertyName} has been updated to for {itemsModified} items on the SharePoint list {listTitle}.");
+            }
 
             return itemsModified;
         }
@@ -195,7 +265,7 @@ namespace Common.SharePoint
             // Add fields
             foreach (var prop in properties)
             {
-                string fieldType = GetSharePointFieldType(prop.PropertyType);
+                string fieldType = SPConnector.GetSharePointFieldType(prop.PropertyType);
                 if (fieldType == null)
                     continue;
 
@@ -217,9 +287,10 @@ namespace Common.SharePoint
         internal int MoveAllItemsBetweenList(ClientContext clientContext, string listSourceTitle, string listDestinationTitle)
         {
             // Read lists
-            var listDest = LoadSPListOnlyWithoutExecution(clientContext, listDestinationTitle);
+            var listDest = LoadSPList(clientContext, listDestinationTitle, false);
             clientContext.Load(listDest.Fields);
-            var itemInListSrc = LoadSPListAndItems(clientContext, listSourceTitle);
+            var spList = LoadSPList(clientContext, listSourceTitle, false);
+            var itemInListSrc = LoadSPListItems(clientContext, spList, null);
             clientContext.Load(spList.Fields);
             ExecuteQueryAndResetCounter(clientContext);
             var fieldToCopy = FilterCopiableFields(listDest.Fields, spList.Fields);
@@ -253,47 +324,114 @@ namespace Common.SharePoint
         #endregion
 
         #region Load list private logic
-        private ListItemCollection LoadSPListAndItems(ClientContext clientContext, string listTitle)
-        {
-            spList = LoadSPListOnlyWithoutExecution(clientContext, listTitle);
-            // Load all items
-            CamlQuery query = CamlQuery.CreateAllItemsQuery();
-            ListItemCollection items = spList.GetItems(query);
-            clientContext.Load(items);
-            // Execute query
-            clientContext.ExecuteQuery();
-
-            return items;
-        }
-
-        private static List LoadSPListOnlyWithoutExecution(ClientContext clientContext, string listTitle)
+        private static List LoadSPList(ClientContext clientContext, string listTitle, bool executeQuery)
         {
             var list = clientContext.Web.Lists.GetByTitle(listTitle);
             // load the list and its description.
             clientContext.Load(list, l => l.Description, l => l.RootFolder.Properties);
+            if (executeQuery)
+                clientContext.ExecuteQuery();
+
             return list;
+        }
+
+        /// <summary>
+        /// Loads the item in the main list, either filtered or all if no filter defined.
+        /// </summary>
+        /// <param name="clientContext">          The client context.</param>
+        /// <param name="spList">                 The SharePoint list.</param>
+        /// <param name="queryFilter">            A filter specifying the query. If null, all items will be loaded.</param>
+        /// <param name="loadThesePropertiesOnly">(Optional) loads these properties only.</param>
+        /// <returns>
+        /// The list items.
+        /// </returns>
+        private ListItemCollection LoadSPListItems(
+            ClientContext clientContext, List spList, Dictionary<string, string> queryFilter, IList<string> loadThesePropertiesOnly = null)
+        {
+            Func<CamlQuery> queryGenerator = () =>
+            {
+                if (queryFilter != null && queryFilter.Count > 0)
+                {
+                    var query = new CamlQuery();
+                    query.ViewXml = SPConnector.DefineWhereQueryString(queryFilter);
+                    return query;
+                }
+                else
+                {
+                    return null;
+                }
+            };
+
+            return LoadSPListItems(clientContext, spList, queryGenerator, loadThesePropertiesOnly);
+        }
+
+        /// <summary>
+        /// Loads the item in the main list, either filtered or all if no filter defined.
+        /// </summary>
+        /// <typeparam name="TVal">Type of the value.</typeparam>
+        /// <param name="clientContext">          The client context.</param>
+        /// <param name="spList">                 The SharePoint list.</param>
+        /// <param name="fieldName">              Name of the field.</param>
+        /// <param name="values">                 The values.</param>
+        /// <param name="loadThesePropertiesOnly">(Optional) loads these properties only.</param>
+        /// <returns>
+        /// The list items.
+        /// </returns>
+        private ListItemCollection LoadSPListItems<TVal>(
+            ClientContext clientContext, List spList, string fieldName, ICollection<TVal> values, IList<string> loadThesePropertiesOnly = null)
+        {
+            Func<CamlQuery> queryGenerator = () =>
+            {
+                if (!string.IsNullOrEmpty(fieldName) && values != null && values.Count > 0)
+                {
+                    CamlQuery query = new CamlQuery();
+                    query.ViewXml = SPConnector.DefineInQueryString(fieldName, values);
+                    return query;
+                }
+                else
+                {
+                    return null;
+                }
+            };
+
+            return LoadSPListItems(clientContext, spList, queryGenerator, loadThesePropertiesOnly);
+        }
+
+        private static ListItemCollection LoadSPListItems(
+            ClientContext clientContext, List spList, Func<CamlQuery> queryGenerator, IList<string> loadThesePropertiesOnly)
+        {
+            // Load items, either filtered or all
+            CamlQuery query = queryGenerator();
+            if (query == null)
+                query = CamlQuery.CreateAllItemsQuery();
+
+            ListItemCollection listItems = spList.GetItems(query);
+            if (loadThesePropertiesOnly == null || loadThesePropertiesOnly.Count == 0)
+            {
+                // load all properties
+                clientContext.Load(listItems);
+            }
+            else
+            {
+                // load only given properties
+                var propertiesToLoad = new System.Linq.Expressions.Expression<Func<ListItem, object>>[loadThesePropertiesOnly.Count + 1];
+                //propertiesToLoad[0] = item => item.Id;
+                for (int i = 0; i < loadThesePropertiesOnly.Count; i++)
+                {
+                    propertiesToLoad[i] = item => item[loadThesePropertiesOnly[i]];
+                }
+
+                clientContext.Load(listItems, items => items.Include(propertiesToLoad));
+            }
+
+            // Execute query
+            clientContext.ExecuteQuery();
+
+            return listItems;
         }
         #endregion
 
         #region create logic
-        private static string GetSharePointFieldType(Type propertyType)
-        {
-            string fieldType = null;
-            if (propertyType == typeof(string)) // text
-                fieldType = "Text";
-            else if (propertyType == typeof(int) || propertyType == typeof(int?))
-                fieldType = "Integer";
-            else if (propertyType == typeof(bool) || propertyType == typeof(bool?))
-                fieldType = "Boolean";
-            else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
-                fieldType = "DateTime";
-            else if (propertyType == typeof(double) || propertyType == typeof(double?)
-                || propertyType == typeof(float) || propertyType == typeof(float?)
-                || propertyType == typeof(decimal) || propertyType == typeof(decimal?))
-                fieldType = "Number";
-            return fieldType;
-        }
-
         private T CreateObjectFromListItem(ListItem listItem)
         {
             Dictionary<string, object> currentSpValues = listItem.FieldValues;
@@ -305,6 +443,12 @@ namespace Common.SharePoint
                     object currentSpValue = currentSpValues[propertyName];
                     if (currentSpValue != null)
                     {
+                        // check complex type and retrieve only the label
+                        if (currentSpValue is Dictionary<string, object>)
+                        {
+                            currentSpValue = ((Dictionary<string, object>)currentSpValue)["Label"];
+                        }
+
                         // convert value to type
                         Type type = objectPropertiesPerName[propertyName].PropertyType;
                         object convertedValue = TypeObjectConverter.ConvertObjectRecord(currentSpValue.ToString(), type);
@@ -319,36 +463,43 @@ namespace Common.SharePoint
 
         #region Update logic
         /// <summary>
-        /// Updates the list item from SharePoint for all properties changed
+        /// Updates the list item from SharePoint for all properties changed.
         /// </summary>
-        /// <param name="clientContext">The client context.</param>
-        /// <param name="itemSource">The item source.</param>
-        /// <param name="itemId">The item identifier.</param>
-        /// <param name="listItem">The list item.</param>
+        /// <param name="clientContext">      The client context.</param>
+        /// <param name="itemSource">         The item source.</param>
+        /// <param name="listItem">           The list item.</param>
         /// <param name="readCurrentSPValues">if set to <c>true</c> read the current SP values.</param>
-        /// <param name="logger">The logger.</param>
         /// <returns>
-        ///   <c>True</c> if really updated
+        /// <c>True</c> if really updated.
         /// </returns>
         private bool UpdateSPListItem(
-            ClientContext clientContext, T itemSource, int itemId, ListItem listItem, bool readCurrentSPValues, ILogger logger)
+            ClientContext clientContext, T itemSource, ListItem listItem, bool readCurrentSPValues)
         {
             try
             {
                 var result = UpdateSPListItem(itemSource, listItem, readCurrentSPValues);
                 if (result)
-                    ExecuteQueryWithCounterCondition(clientContext);
+                    ExecuteQueryAndWait(clientContext);
                 return result;
             }
             catch (Exception ex)
             {
-                logger.WriteError(ex, $"Error with item {itemId}");
+                logger.WriteError(ex, $"Error with item {itemSource.ToString()}");
                 return false;
             }
         }
 
+        private static void ExecuteQueryAndWait(ClientContext clientContext)
+        {
+            clientContext.ExecuteQuery();
+#if DEBUG
+            System.Threading.Thread.Sleep(1000 * 3); // wait 3s
+#endif
+        }
+
         private void ExecuteQueryWithCounterCondition(ClientContext clientContext)
         {
+            // shift execution of the query, but not if limit is only one item.
             if (itemCountToProcess == itemCountToProcessLimit)
                 ExecuteQueryAndResetCounter(clientContext);
             else
@@ -381,6 +532,9 @@ namespace Common.SharePoint
 
             foreach (string propertyName in objectPropertiesPerName.Keys)
             {
+                if (propertyName == nameof(itemSource.ID))
+                    continue;  // ID will be automatically set by SharePoint, it must not be set from code (0 anyway)!
+
                 // read source value
                 object sourceValue = objectPropertiesPerName[propertyName].GetValue(itemSource);
 
