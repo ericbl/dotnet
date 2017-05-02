@@ -63,6 +63,7 @@
     <Compile Include="Files\CSVFileInZip.cs" />
     <Compile Include="Files\CSVSerializer2.cs" />
     <Compile Include="Files\FilePathOrStream.cs" />
+    <Compile Include="Generic\DIsposableList.cs" />
     <Compile Include="Generic\FormattableAndEquatableStringBase.cs" />
     <Compile Include="Generic\GenericChangeByStringComparison.cs" />
     <Compile Include="Generic\TypeObjectConverter.cs" />

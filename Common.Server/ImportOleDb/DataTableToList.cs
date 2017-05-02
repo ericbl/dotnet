@@ -9,7 +9,7 @@ namespace Common.Server.ImportOleDb
     /// Conversion tools to read a table of a dataset as a List of T
     /// </summary>
     /// <typeparam name="T">Type of the item in the list</typeparam>
-    public class DataTableToList<T>
+    public static class DataTableToList<T>
         where T : IDataTableToList
     {
         /// <summary>

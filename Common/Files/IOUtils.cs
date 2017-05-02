@@ -118,14 +118,14 @@ namespace Common.Files
         /// Extracts the file system folder from URI.
         /// </summary>
         /// <param name="fileSystemLetter">The file system letter.</param>
-        /// <param name="uri">The URI.</param>
+        /// <param name="uriPath">The URI.</param>
         /// <returns>the folder path</returns>
-        public static string ExtractFileSystemFolderFromUri(string fileSystemLetter, string uri)
+        public static string ExtractFileSystemFolderFromUri(string fileSystemLetter, string uriPath)
         {
-            if (string.IsNullOrEmpty(fileSystemLetter) || string.IsNullOrEmpty(uri))
+            if (string.IsNullOrEmpty(fileSystemLetter) || string.IsNullOrEmpty(uriPath))
                 return null;
 
-            var result = Path.Combine(fileSystemLetter, uri.Split('/').Last());
+            var result = Path.Combine(fileSystemLetter, uriPath.Split('/').Last());
             return CheckDirectoryExists(result);
         }
         #endregion

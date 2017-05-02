@@ -124,5 +124,14 @@ namespace Common.Generic
                 return firstToSecond.Count;
             }
         }
+
+        /// <summary>
+        /// Clears this instance to its blank/initial state.
+        /// </summary>
+        public void Clear()
+        {
+            firstToSecond.Clear();
+            secondToFirst.Clear();
+        }
     }
 }

@@ -15,12 +15,16 @@ namespace Common.Reflection
         /// <summary>
         /// Gets all properties of the class.
         /// </summary>
-        /// <param name="type">The type of the class to read the memberInfo from.</param>
-        /// <returns>collection of PropertyInfo.</returns>
-        public static IEnumerable<PropertyInfo> GetAllPropertiesOfClass(Type type)
+        /// <param name="type">                     The type of the class to read the memberInfo from.</param>
+        /// <param name="filterWithIgnoreAttribute">(Optional) True will read the <seealso cref="IgnoreSerializationAttribute"/> 
+        /// and ignore the properties with that attribute.</param>
+        /// <returns>
+        /// collection of PropertyInfo.
+        /// </returns>
+        public static IEnumerable<PropertyInfo> GetAllPropertiesOfClass(Type type, bool filterWithIgnoreAttribute)
         {
             return
-               from mi in GetAllFieldsAndPropertiesOfClass(type)
+               from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
                where mi.MemberType == MemberTypes.Property
                select mi as PropertyInfo;
         }
@@ -28,16 +32,19 @@ namespace Common.Reflection
         /// <summary>
         /// Gets all fields and properties of the class.
         /// </summary>
-        /// <param name="type">The type of the class to read the memberInfo from..</param>
+        /// <param name="type">                     The type of the class to read the memberInfo from.</param>
+        /// <param name="filterWithIgnoreAttribute">True will read the <seealso cref="IgnoreSerializationAttribute"/>
+        /// and filter them out from the collection.</param>
         /// <returns>
         /// collection of memberInfo.
         /// </returns>
-        public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClass(Type type)
+        public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClass(Type type, bool filterWithIgnoreAttribute)
         {
             return
                 from mi in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                 let ignoreAttr = (IgnoreSerializationAttribute)Attribute.GetCustomAttribute(mi, typeof(IgnoreSerializationAttribute))
-                where (mi.MemberType == MemberTypes.Field || mi.MemberType == MemberTypes.Property) && (ignoreAttr == null)
+                where (mi.MemberType == MemberTypes.Field || mi.MemberType == MemberTypes.Property) &&
+                    (!filterWithIgnoreAttribute || (filterWithIgnoreAttribute && ignoreAttr == null))
                 orderby type.Equals(mi.DeclaringType) ? 1 : -1
                 select mi;
         }
@@ -45,14 +52,16 @@ namespace Common.Reflection
         /// <summary>
         /// Gets all fields and properties of the class, order by ColumnOrderAttribute or Name.
         /// </summary>
-        /// <param name="type">The type of the class to read the memberInfo from.</param>
+        /// <param name="type">                     The type of the class to read the memberInfo from.</param>
+        /// <param name="filterWithIgnoreAttribute">(Optional) True will read the <seealso cref="IgnoreSerializationAttribute"/>
+        /// and filter them out from the collection.</param>
         /// <returns>
         /// collection of memberInfo.
         /// </returns>
-        public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClassOrdered(Type type)
+        public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClassOrdered(Type type, bool filterWithIgnoreAttribute = true)
         {
             return
-                from mi in GetAllFieldsAndPropertiesOfClass(type)
+                from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
                 let orderAttr = (ColumnOrderAttribute)Attribute.GetCustomAttribute(mi, typeof(ColumnOrderAttribute))
                 orderby orderAttr == null ? int.MaxValue : orderAttr.Order, mi.Name
                 select mi;

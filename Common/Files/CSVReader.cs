@@ -14,7 +14,7 @@ namespace Common.Files
     /// <summary>
     /// A CSV reader.
     /// </summary>
-    public class CSVReader
+    public static class CSVReader
     {
         /// <summary>
         /// Reads the CSV file and transform it as a list of object
@@ -50,7 +50,7 @@ namespace Common.Files
             {
                 int i = 0;
                 fieldDict = new Dictionary<int, MemberInfo>();
-                foreach (var mi in Utils.GetAllFieldsAndPropertiesOfClass(typeof(T)))
+                foreach (var mi in Utils.GetAllFieldsAndPropertiesOfClass(typeof(T), true))
                 {
                     fieldDict.Add(i++, mi);
                 }

@@ -76,7 +76,7 @@ namespace Common.Files
         internal static void Serialize<T>(TextWriter output, IEnumerable<T> objects, bool exportHeader, bool sortTFields)
         {
             var type = typeof(T);
-            var fields = sortTFields ? Reflection.Utils.GetAllFieldsAndPropertiesOfClassOrdered(type) : Reflection.Utils.GetAllFieldsAndPropertiesOfClass(type);
+            var fields = sortTFields ? Reflection.Utils.GetAllFieldsAndPropertiesOfClassOrdered(type) : Reflection.Utils.GetAllFieldsAndPropertiesOfClass(type, true);
             if (exportHeader)
                 output.WriteLine(QuoteRecord(fields.Select(f => f.Name)));
             foreach (var record in objects)

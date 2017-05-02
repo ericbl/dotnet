@@ -1,6 +1,8 @@
-﻿using Common.Logging;
+﻿using Common.Generic;
+using Common.Logging;
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Common.Exceptions
 {
@@ -24,11 +26,21 @@ namespace Common.Exceptions
                 return;
             }
 
-            message += "\n" + ex.Message
-                + "\n" + ex.StackTrace;
-            //string methodName = Helper.Utils.GetCallingMethodNameOnStackTrace(2);
-            string methodName = Helper.Utils.GetMethodNameFromSite(ex);
-            var fullMsg = "Exception in " + methodName + message;
+            // Get message
+            message += Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace;
+            // Prepare the message to log
+            string siteMethodName = GetMethodNameFromSite(ex);
+            var fullMsg = "Exception in " + siteMethodName;
+            // Get info from source code: useless since duplicate from  ex.StackTrace
+            //string stackTraceInfo = string.Empty;
+            //var stackTrace = new StackTrace(ex, true);
+            //stackTrace.GetFrames().ForEach(frame => stackTraceInfo += "from " + GetMethodAndFileNameAndLineNrFromStackFrame(frame) + Environment.NewLine);
+            //if (!string.IsNullOrEmpty(stackTraceInfo))
+            //{
+            //    fullMsg += stackTraceInfo;
+            //}
+
+            fullMsg += message;
             if (defaultLogger == null)
             {
                 Trace.TraceError(fullMsg);
@@ -102,7 +114,10 @@ namespace Common.Exceptions
             T result;
             try
             {
-                result = method();
+                if (method != null)
+                    result = method();
+                else
+                    result = default(T);
             }
             catch (Exception ex)
             {
@@ -137,12 +152,92 @@ namespace Common.Exceptions
         {
             try
             {
-                method();
+                method?.Invoke();
             }
             catch (Exception ex)
             {
                 ProcessException(ex, serializeMsg, preProcessSpecialException, entryObject, defaultLogger);
             }
         }
+
+        #region StackFrame
+        /// <summary>
+        /// Gets the calling method in the n frame before the current one (default = 1)
+        /// </summary>
+        /// <param name="n">
+        /// The Calling Method Number n.
+        /// </param>
+        /// <returns>
+        /// The calling method
+        /// </returns>
+        public static MethodBase GetCallingMethod(int n = 1)
+        {
+            return GetStackFrame(n).GetMethod();
+        }
+
+        /// <summary>
+        /// Gets stack frame.
+        /// </summary>
+        /// <param name="n">(Optional) The Calling Method Number n.</param>
+        /// <returns>The stack frame.</returns>
+        public static StackFrame GetStackFrame(int n = 1)
+        {
+            // get call stack
+            var stackTrace = new StackTrace();
+
+            // get calling method name
+            var result = stackTrace.GetFrame(n);
+            if (result.GetMethod().Name == "Invoke")
+            {
+                // The stacktrace behaves differently if the app is started from Visual Studio (VS) or from the Filesytem (FS)
+                // In FS, the trace is shifted with Invoke/SyncInvoke, thus get the previous frame (-1,-2, -3, -4 always return SyncInvokeXXX!)
+                result = stackTrace.GetFrame(n - 1);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets stack frame from the exception.
+        /// </summary>
+        /// <param name="ex">The exception.</param>
+        /// <returns>
+        /// The stack frame from the exception.
+        /// </returns>
+        public static StackFrame GetStackFrameFromException(Exception ex)
+        {
+            // get call stack
+            var stackTrace = new StackTrace(ex, true);
+            return stackTrace.GetFrame(1);
+        }
+
+        /// <summary>
+        /// Gets the calling method name, the source file name and line number from the stack trace.
+        /// </summary>
+        /// <param name="frame">The Calling Method Number n.</param>
+        /// <returns>
+        /// The calling method name, the source file name and line number from the stack trace.
+        /// </returns>
+        public static string GetMethodAndFileNameAndLineNrFromStackFrame(StackFrame frame)
+        {
+            if (frame != null && frame.GetMethod() != null)
+                return $"method {frame.GetMethod().Name} in source file {frame.GetFileName()} line {frame.GetFileLineNumber()}";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the method name from site.
+        /// </summary>
+        /// <param name="ex">The ex.</param>
+        /// <returns>The method name from the ex.TargetSite.Name property</returns>
+        public static string GetMethodNameFromSite(Exception ex)
+        {
+            MethodBase site = ex.TargetSite;
+            return site == null ? null : site.Name;
+        }
+
+
+        #endregion
     }
 }

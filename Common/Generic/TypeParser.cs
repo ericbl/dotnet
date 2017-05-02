@@ -44,13 +44,17 @@ namespace Common.Generic
         }
 
         /// <summary>
-        /// Try to parse the string as value type.
+        /// Attempts to parse a structure from the given data, returning a default value rather than throwing an exception if it fails.
         /// </summary>
-        /// <typeparam name="T">Type of the value object (struct)</typeparam>
-        /// <param name="input">The input.</param>
-        /// <param name="cultureInfo">The culture information.</param>
-        /// <param name="ignoreInvalidCastExceptionAndFormatException">if set to <c>true</c>, ignore the invalid cast and format exception.</param>
-        /// <returns>The converted object</returns>
+        /// <exception cref="InvalidCastException">Thrown when an object cannot be cast to a required type.</exception>
+        /// <exception cref="FormatException">     Thrown when the format of the parsed object is incorrect.</exception>
+        /// <typeparam name="T">Generic type parameter.</typeparam>
+        /// <param name="input">                                       The input.</param>
+        /// <param name="cultureInfo">                                 (Optional) Information describing the culture.</param>
+        /// <param name="ignoreInvalidCastExceptionAndFormatException">(Optional) True to ignore invalid cast exception and format exception.</param>
+        /// <returns>
+        /// The converted null-able object
+        /// </returns>
         public static T? TryParseStruct<T>(string input, IFormatProvider cultureInfo = null, bool ignoreInvalidCastExceptionAndFormatException = false) 
             where T : struct
         {

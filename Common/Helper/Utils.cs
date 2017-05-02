@@ -12,67 +12,6 @@ namespace Common.Helper
     /// </summary>
     public static class Utils
     {
-        #region StackFrame
-        /// <summary>
-        /// Gets the calling method in the n frame before the current one (default = 1)
-        /// </summary>
-        /// <param name="n">
-        /// The Calling Method Number n.
-        /// </param>
-        /// <returns>
-        /// The calling method
-        /// </returns>
-        public static MethodBase GetCallingMethod(int n = 1)
-        {
-            // get call stack
-            var stackTrace = new StackTrace();
-
-            // get calling method name
-            var result = stackTrace.GetFrame(n).GetMethod();
-            if (result.Name == "Invoke")
-            {
-                // The stacktrace behaves differently if the app is started from Visual Studio (VS) or from the Filesytem (FS)
-                // In FS, the trace is shifted with Invoke/SyncInvoke, thus get the previous frame (-1,-2, -3, -4 always return SyncInvokeXXX!)
-                result = stackTrace.GetFrame(n - 1).GetMethod();
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the method name from site.
-        /// </summary>
-        /// <param name="ex">The ex.</param>
-        /// <returns>The method name from the ex.TargetSite.Name property</returns>
-        public static string GetMethodNameFromSite(Exception ex)
-        {
-            MethodBase site = ex.TargetSite;
-            return site == null ? null : site.Name;
-        }
-
-        /// <summary>
-        /// Returns the method name of the caller.
-        /// </summary>
-        /// <returns>Name of the calling method</returns>
-        public static string GetCallingMethodName()
-        {
-            StackFrame sf = new StackFrame(1, false);
-            return sf.GetMethod().Name;
-        }
-
-        /// <summary>
-        /// Returns the method name of the caller.
-        /// </summary>
-        /// <param name="n">The Calling Method Number n.</param>
-        /// <returns>
-        /// Name of the calling method
-        /// </returns>
-        public static string GetCallingMethodNameOnStackTrace(int n = 1)
-        {
-            return GetCallingMethod(n).Name;
-        }
-        #endregion
-
         #region Cmd line and computer
         /// <summary>
         /// Start a process to run the given command.

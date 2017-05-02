@@ -159,7 +159,7 @@ namespace Common.Generic
         /// <typeparam name="T">Type of the item in the collection</typeparam>
         /// <param name="list">The list.</param>
         /// <param name="delete">The delete action.</param>
-        public static void DeleteItemsInList<T>(this IList<T> list, Action<T> delete)
+        public static void DeleteItemsInList<T>(this ICollection<T> list, Action<T> delete)
         {
             if (list is IList && !((IList)list).IsFixedSize)
             {
@@ -177,6 +177,16 @@ namespace Common.Generic
                     delete?.Invoke(list.ElementAt(i));
                 }
             }
+        }
+
+        /// <summary>
+        /// An IList&lt;T&gt; extension method that dispose item in list.
+        /// </summary>
+        /// <typeparam name="T">Generic type parameter.</typeparam>
+        /// <param name="list">The list.</param>
+        public static void DisposeItemsInList<T>(this IList<T> list) where T : IDisposable
+        {
+            DeleteItemsInList(list, item => item.Dispose());
         }
     }
 }

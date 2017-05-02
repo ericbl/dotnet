@@ -8,7 +8,7 @@ namespace Common.Files
     /// <summary>
     /// A C# class generator from a CSV file.
     /// </summary>
-    public class CSharpClassGeneratorFromCSV
+    public static class CSharpClassGeneratorFromCSV
     {
         /// <summary>
         /// Generates a C# class from a CSV file and write the cs file to the same folder as the CSV file

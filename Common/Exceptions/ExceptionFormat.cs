@@ -120,6 +120,9 @@ namespace Common.Exceptions
         /// </returns>
         public static string FormatKey(object[] key)
         {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
             var sb = new StringBuilder();
             for (int idx = 0; idx < key.Length; idx++)
             {
