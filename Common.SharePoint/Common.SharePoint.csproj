@@ -108,6 +108,8 @@
     <Compile Include="ISPListItem.cs" />
     <Compile Include="ListWithMetadata.cs" />
     <Compile Include="SPConnectorList.cs" />
+    <Compile Include="SPListFilter.cs" />
+    <Compile Include="SPListFilterBase.cs" />
     <Compile Include="SPListManager.cs" />
     <Compile Include="SPParameter.cs" />
     <Compile Include="SPReader.cs" />

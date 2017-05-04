@@ -14,20 +14,20 @@ namespace Common.SharePoint
         #region List and its own properties and Ctor
         private const string SourceDateTimeName = "SourceDate";
         private readonly IList<T> list;
-        private readonly Dictionary<string, string> queryFilter;
+        private readonly ICollection<SPListFilterBase> queryFilters;
         private DateTime sourceDateUTC;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ListWithMetadata{T}" /> class.
         /// </summary>
         /// <param name="sourceDate"> (Optional) The source date, will be converted to UTC for SharePoint.</param>
-        /// <param name="queryFilter">(Optional) The query filter.</param>
-        public ListWithMetadata(DateTime? sourceDate = null, Dictionary<string, string> queryFilter = null)
+        /// <param name="queryFilters">(Optional) The query filters.</param>
+        public ListWithMetadata(DateTime? sourceDate = null, ICollection<SPListFilterBase> queryFilters = null)
         {
             this.list = new List<T>();
             if (sourceDate.HasValue)
                 this.sourceDateUTC = sourceDate.Value.ToUniversalTime();
-            this.queryFilter = queryFilter;
+            this.queryFilters = queryFilters;
         }
 
         /// <summary>
@@ -53,14 +53,14 @@ namespace Common.SharePoint
         }
 
         /// <summary>
-        /// Gets the query filter.
+        /// Gets the query filters.
         /// </summary>
         /// <value>
-        /// The query filter.
+        /// The query filters.
         /// </value>
-        public Dictionary<string, string> QueryFilter
+        public ICollection<SPListFilterBase> QueryFilters
         {
-            get { return queryFilter; }
+            get { return queryFilters; }
         }
         #endregion
 

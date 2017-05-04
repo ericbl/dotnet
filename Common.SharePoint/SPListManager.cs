@@ -45,17 +45,17 @@ namespace Common.SharePoint
         /// </summary>
         /// <param name="clientContext">The client context.</param>
         /// <param name="listTitle">    The list title.</param>
-        /// <param name="queryFilter">  A filter specifying the query.</param>
+        /// <param name="queryFilters"> The filters specifying the query.</param>
         /// <returns>
         /// List of created objects.
         /// </returns>
-        internal ListWithMetadata<T> TransformSPListToObjects(ClientContext clientContext, string listTitle, Dictionary<string, string> queryFilter)
+        internal ListWithMetadata<T> TransformSPListToObjects(ClientContext clientContext, string listTitle, ICollection<SPListFilterBase> queryFilters)
         {
-            var resultList = new ListWithMetadata<T>(queryFilter: queryFilter);
+            var resultList = new ListWithMetadata<T>(queryFilters: queryFilters);
 
             // Read list
             var spList = LoadSPList(clientContext, listTitle, false);
-            ListItemCollection items = LoadSPListItems(clientContext, spList, queryFilter);
+            ListItemCollection items = LoadSPListItems(clientContext, spList, queryFilters);
 
             // Set description
             resultList.SetListProperties(spList.RootFolder.Properties);
@@ -116,13 +116,13 @@ namespace Common.SharePoint
             HashSet<int> idUpdated = new HashSet<int>();
             int itemsModified = 0;
 
-            if (listSource.QueryFilter != null)
+            if (listSource.QueryFilters != null)
             {
                 // item source in dictionary
                 Dictionary<int, T> dictSource = listSource.List.Where(src => src.ID > 0).ToDictionary(src => src.ID);
 
                 // Read list
-                ListItemCollection items = LoadSPListItems(clientContext, spList, listSource.QueryFilter);
+                ListItemCollection items = LoadSPListItems(clientContext, spList, listSource.QueryFilters);
                 var itemsToDelete = new List<ListItem>();
 
                 foreach (ListItem listItem in items)
@@ -143,7 +143,7 @@ namespace Common.SharePoint
                 }
 
                 // Ensure all items get committed
-                ExecuteQueryAndWait(clientContext);
+                ExecuteQueryAndResetCounter(clientContext);
 
                 // Delete items
                 //if (itemsToDelete.Count > 0)
@@ -165,7 +165,7 @@ namespace Common.SharePoint
             }
 
             // Ensure all items get committed
-            ExecuteQueryAndWait(clientContext);
+            ExecuteQueryAndResetCounter(clientContext);
 
             logger.WriteInfo($"{itemsModified} items have been updated to the SharePoint list {listTitle}.");
 
@@ -303,8 +303,10 @@ namespace Common.SharePoint
                 foreach (var field in fieldToCopy)
                 {
                     newItem[field.InternalName] = item[field.InternalName];
-                    newItem.Update();
                 }
+
+                // Update all fields at once
+                newItem.Update();
 
                 ExecuteQueryWithCounterCondition(clientContext);
                 copiedItems++;
@@ -340,20 +342,37 @@ namespace Common.SharePoint
         /// </summary>
         /// <param name="clientContext">          The client context.</param>
         /// <param name="spList">                 The SharePoint list.</param>
-        /// <param name="queryFilter">            A filter specifying the query. If null, all items will be loaded.</param>
+        /// <param name="queryFilters">            A filter specifying the query. If null, all items will be loaded.</param>
         /// <param name="loadThesePropertiesOnly">(Optional) loads these properties only.</param>
         /// <returns>
         /// The list items.
         /// </returns>
         private ListItemCollection LoadSPListItems(
-            ClientContext clientContext, List spList, Dictionary<string, string> queryFilter, IList<string> loadThesePropertiesOnly = null)
+            ClientContext clientContext, List spList, ICollection<SPListFilterBase> queryFilters, IList<string> loadThesePropertiesOnly = null)
         {
             Func<CamlQuery> queryGenerator = () =>
             {
-                if (queryFilter != null && queryFilter.Count > 0)
+                if (queryFilters != null && queryFilters.Count > 0)
                 {
+                    clientContext.Load(spList.Fields);
+                    clientContext.ExecuteQuery();
+                    // transform queryFilter
+                    ICollection<SPListFilter> queryFiltersWithType = new List<SPListFilter>(queryFilters.Count);
+                    foreach (var filter in queryFilters)
+                    {
+                        var field = spList.Fields.FirstOrDefault(f => f.Filterable && f.InternalName == filter.FieldName);
+                        if (field != null)
+                        {
+                            queryFiltersWithType.Add(new SPListFilter(filter, field.FieldTypeKind));
+                        }
+                        else
+                        {
+                            logger.WriteWarning($"No field found in the list for {filter.FieldName}!");
+                        }
+                    }
+
                     var query = new CamlQuery();
-                    query.ViewXml = SPConnector.DefineWhereQueryString(queryFilter);
+                    query.ViewXml = SPConnector.DefineWhereQueryString(queryFiltersWithType);
                     return query;
                 }
                 else
@@ -479,7 +498,7 @@ namespace Common.SharePoint
             {
                 var result = UpdateSPListItem(itemSource, listItem, readCurrentSPValues);
                 if (result)
-                    ExecuteQueryAndWait(clientContext);
+                    ExecuteQueryWithCounterCondition(clientContext);
                 return result;
             }
             catch (Exception ex)
@@ -493,7 +512,7 @@ namespace Common.SharePoint
         {
             clientContext.ExecuteQuery();
 #if DEBUG
-            System.Threading.Thread.Sleep(1000 * 3); // wait 3s
+            //System.Threading.Thread.Sleep(1000 * 3); // wait 3s
 #endif
         }
 
@@ -532,8 +551,9 @@ namespace Common.SharePoint
 
             foreach (string propertyName in objectPropertiesPerName.Keys)
             {
-                if (propertyName == nameof(itemSource.ID))
-                    continue;  // ID will be automatically set by SharePoint, it must not be set from code (0 anyway)!
+                // Ignore properties managed by SharePoint
+                if (propertyName == nameof(itemSource.ID) || propertyName == nameof(itemSource.Modified))
+                    continue;
 
                 // read source value
                 object sourceValue = objectPropertiesPerName[propertyName].GetValue(itemSource);
@@ -569,11 +589,14 @@ namespace Common.SharePoint
                 if (updateField)
                 {
                     listItem[propertyName] = sourceValue;
-                    listItem.Update();
                     if (!updated)
                         updated = true;
                 }
             }
+
+            // Update all fields at once. Otherwise, some get saved and trigger Flow before all are set!
+            if (updated)
+                listItem.Update();
 
             return updated;
         }

@@ -3,6 +3,7 @@ using Common.Windows;
 using Microsoft.SharePoint.Client;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace Common.SharePoint
@@ -90,10 +91,10 @@ namespace Common.SharePoint
             //          </Where>
             //        </Query>
             //      </View>";
-            Dictionary<string, string> queryFilter = new Dictionary<string, string>();
-            queryFilter.Add("FileDirRef", parameter.SharePointFolderPath);
-            queryFilter.Add("File_x0020_Type", fileExtension);
-            camlQuery.ViewXml = DefineWhereQueryString(queryFilter);
+            ICollection<SPListFilter> queryFilters = new List<SPListFilter>(2);
+            queryFilters.Add(new SPListFilter { FieldName = "FileDirRef", FieldType = FieldType.Text, FieldValue = parameter.SharePointFolderPath });
+            queryFilters.Add(new SPListFilter { FieldName = "File_x0020_Type", FieldType = FieldType.Text, FieldValue = fileExtension });
+            camlQuery.ViewXml = DefineWhereQueryString(queryFilters);
 
             ListItemCollection listItems = documentList.GetItems(camlQuery);
             clientContext.Load(listItems);
@@ -105,24 +106,30 @@ namespace Common.SharePoint
         /// <summary>
         /// Define query string.
         /// </summary>
-        /// <param name="queryFilter">A filter specifying the query.</param>
+        /// <param name="queryFilters">A filter specifying the query.</param>
         /// <returns>
         /// A string.
         /// </returns>
-        internal static string DefineWhereQueryString(Dictionary<string, string> queryFilter)
+        internal static string DefineWhereQueryString(ICollection<SPListFilter> queryFilters)
         {
-            if (queryFilter == null || queryFilter.Count == 0)
+            if (queryFilters == null || queryFilters.Count == 0)
                 return null;
 
             string queryString = "<View Scope='Recursive'><Query><Where>";
 
-            bool multiple = queryFilter.Count > 1;
+            //var firstDict = new Dictionary<string, string>(1);
+            //var firstKvp = queryFilter.Last();
+            //firstDict.Add(firstKvp.Key, firstKvp.Value);
+            //queryFilter = firstDict;
+
+            // Use And condition for multiple filters
+            bool multiple = queryFilters.Count > 1;
             if (multiple)
                 queryString += "<And>";
 
-            foreach (var kvp in queryFilter)
+            foreach (var filter in queryFilters)
             {
-                queryString += $"<Eq><FieldRef Name='{kvp.Key}'/><Value Type='Text'>{kvp.Value}</Value></Eq>";
+                queryString += $"<Eq><FieldRef Name='{filter.FieldName}'/><Value Type='{filter.FieldType}'>{filter.FieldValue}</Value></Eq>";
             }
 
             if (multiple)

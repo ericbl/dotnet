@@ -39,13 +39,13 @@ namespace Common.SharePoint
         /// <summary>
         /// Read the SharePoint list and generate objects from the list items.
         /// </summary>
-        /// <param name="queryFilter">A filter specifying the query.</param>
+        /// <param name="queryFilters">The filters specifying the query.</param>
         /// <returns>
         /// List of created objects.
         /// </returns>
-        public ListWithMetadata<T> ReadAndTransformSPList(Dictionary<string, string> queryFilter)
+        public ListWithMetadata<T> ReadAndTransformSPList(ICollection<SPListFilterBase> queryFilters)
         {
-            return spConnector.PrepareContextAndRunActionOnSP(context => spListMgr.TransformSPListToObjects(context, listTitle, queryFilter));
+            return spConnector.PrepareContextAndRunActionOnSP(context => spListMgr.TransformSPListToObjects(context, listTitle, queryFilters));
         }
 
         /// <summary>
