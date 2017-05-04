@@ -63,7 +63,7 @@
     <Compile Include="Files\CSVFileInZip.cs" />
     <Compile Include="Files\CSVSerializer2.cs" />
     <Compile Include="Files\FilePathOrStream.cs" />
-    <Compile Include="Generic\DIsposableList.cs" />
+    <Compile Include="Generic\DisposableList.cs" />
     <Compile Include="Generic\FormattableAndEquatableStringBase.cs" />
     <Compile Include="Generic\GenericChangeByStringComparison.cs" />
     <Compile Include="Generic\TypeObjectConverter.cs" />
@@ -93,6 +93,8 @@
     <Compile Include="Files\IOUtils.cs" />
     <Compile Include="Files\RegistryIni.cs" />
     <Compile Include="Serialization\BinaryCompression.cs" />
+    <Compile Include="Serialization\SerializationFileParameter.cs" />
+    <Compile Include="Serialization\SerializationParameter.cs" />
     <Compile Include="Serialization\SerializeUtils.cs" />
     <Compile Include="Strings\CommaSeparatedStringDump.cs" />
     <Compile Include="Strings\Helper.cs" />

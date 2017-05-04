@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using Common.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,14 +32,15 @@ namespace Common.Files
         /// <summary>
         /// Serializes the collection to Comma Separated Value (CSV) format.
         /// </summary>
-        /// <typeparam name="T">Type of the items</typeparam>
-        /// <param name="exportFolderPath">The export folder path.</param>
-        /// <param name="filename">The filename.</param>
-        /// <param name="collection">The collection.</param>
+        /// <typeparam name="T">Type of the items.</typeparam>
+        /// <param name="exportFolderPath">         The export folder path.</param>
+        /// <param name="filename">                 The filename.</param>
+        /// <param name="collection">               The collection.</param>
+        /// <param name="filterWithIgnoreAttribute">(Optional) True to filter with ignore attribute.</param>
         /// <returns>
-        /// The full path of the serialized file
+        /// The full path of the serialized file.
         /// </returns>
-        public static string SerializeCollection<T>(string exportFolderPath, string filename, IEnumerable<T> collection)
+        public static string SerializeCollection<T>(string exportFolderPath, string filename, IEnumerable<T> collection, bool filterWithIgnoreAttribute = true)
         {
             string filePath = null;
             if (collection.Count() > 0)
@@ -52,34 +54,41 @@ namespace Common.Files
         /// Serialize objects to Comma Separated Value (CSV) format ( http://tools.ietf.org/html/rfc4180 )
         /// </summary>
         /// <typeparam name="T">.</typeparam>
-        /// <param name="folderFullPath">The folder full path.</param>
-        /// <param name="fileName">Name of the file.</param>
-        /// <param name="append">if set to <c>true</c> append to existing file. Otherwise, overwrite the file.</param>
-        /// <param name="objects">The collection of objects to serialize.</param>
-        /// <param name="sortTFields">(Optional) True to sort fields.</param>
+        /// <param name="folderFullPath">           The folder full path.</param>
+        /// <param name="fileName">                 Name of the file.</param>
+        /// <param name="append">                   if set to <c>true</c> append to existing file. Otherwise, overwrite the file.</param>
+        /// <param name="objects">                  The collection of objects to serialize.</param>
+        /// <param name="sortTFields">              (Optional) True to sort fields.</param>
+        /// <param name="filterWithIgnoreAttribute">(Optional) True to filter with ignore attribute.</param>
         /// <returns>
         /// The full path of the written file.
         /// </returns>
-        public static string Serialize<T>(string folderFullPath, string fileName, bool append, IEnumerable<T> objects, bool sortTFields = false)
+        public static string Serialize<T>(
+            string folderFullPath, string fileName, bool append, IEnumerable<T> objects, bool sortTFields = false, bool filterWithIgnoreAttribute = true)
         {
-            return Serialization.SerializeUtils.Serialize(folderFullPath, fileName, append, true, sortTFields, System.Text.Encoding.Default, objects, Serialize);
+            var fileParameter = new SerializationFileParameter(folderFullPath, fileName, append);
+            var serializationParameter = new SerializationParameter<T>(objects, true, sortTFields, filterWithIgnoreAttribute);
+            return SerializeUtils.Serialize(fileParameter, serializationParameter, Serialize);
         }
 
         /// <summary>
         /// Serialize objects to Comma Separated Value (CSV) format ( http://tools.ietf.org/html/rfc4180 )
         /// </summary>
         /// <typeparam name="T">.</typeparam>
-        /// <param name="output">The output.</param>
-        /// <param name="objects">The objects.</param>
-        /// <param name="exportHeader">if set to <c>true</c> export the header.</param>
-        /// <param name="sortTFields">True to sort fields.</param>
-        internal static void Serialize<T>(TextWriter output, IEnumerable<T> objects, bool exportHeader, bool sortTFields)
+        /// <param name="output">                The output.</param>
+        /// <param name="serializationParameter">The parameters as input for the serialization.</param>
+        internal static void Serialize<T>(TextWriter output, SerializationParameter<T> serializationParameter)
         {
+            if (serializationParameter == null)
+                throw new ArgumentNullException(nameof(serializationParameter));
+
             var type = typeof(T);
-            var fields = sortTFields ? Reflection.Utils.GetAllFieldsAndPropertiesOfClassOrdered(type) : Reflection.Utils.GetAllFieldsAndPropertiesOfClass(type, true);
-            if (exportHeader)
+            var fields = serializationParameter.OrderFieldsPerName
+                ? Reflection.Utils.GetAllFieldsAndPropertiesOfClassOrdered(type, serializationParameter.FilterWithIgnoreAttribute)
+                : Reflection.Utils.GetAllFieldsAndPropertiesOfClass(type, serializationParameter.FilterWithIgnoreAttribute);
+            if (serializationParameter.ExportHeader)
                 output.WriteLine(QuoteRecord(fields.Select(f => f.Name)));
-            foreach (var record in objects)
+            foreach (var record in serializationParameter.Objects)
             {
                 string line = QuoteRecord(FormatObject(fields, record));
                 output.WriteLine(line);

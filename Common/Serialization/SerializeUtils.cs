@@ -11,35 +11,40 @@ namespace Common.Serialization
     public static class SerializeUtils
     {
         #region Serialization
+
         /// <summary>
         /// Serialize objects to file.
         /// </summary>
-        /// <typeparam name="T">Type of the object</typeparam>
-        /// <param name="folderFullPath">The folder full path.</param>
-        /// <param name="fileName">Name of the file.</param>
-        /// <param name="append">if set to <c>true</c> append to existing file. Otherwise, overwrite the file.</param>
-        /// <param name="exportHeader">if set to <c>true</c> export the header while serializing.</param>
-        /// <param name="sortTFields">if set to <c>true</c> [sort t fields].</param>
-        /// <param name="encoding">The encoding.</param>
-        /// <param name="objects">The objects.</param>
-        /// <param name="action">The action.</param>
+        /// <exception cref="ArgumentNullException">Thrown when one or more required arguments are null.</exception>
+        /// <exception cref="ArgumentException">    {folderFullPath}</exception>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="serializationFileParameter">The file parameter.</param>
+        /// <param name="serializationParameter">    The input parameter for the serialization.</param>
+        /// <param name="action">                    The action.</param>
         /// <returns>
-        /// The full path of the written file
+        /// The full path of the written file.
         /// </returns>
-        /// <exception cref="ArgumentException">{folderFullPath}</exception>
-        public static string Serialize<T>(string folderFullPath, string fileName, bool append, bool exportHeader, bool sortTFields,
-            Encoding encoding, IEnumerable<T> objects, Action<StreamWriter, IEnumerable<T>, bool, bool> action)
+        public static string Serialize<T>(
+            SerializationFileParameter serializationFileParameter,
+            SerializationParameter<T> serializationParameter,
+            Action<StreamWriter, SerializationParameter<T>> action)
         {
-            if (!Directory.Exists(folderFullPath))
+            if (serializationFileParameter == null)
+                throw new ArgumentNullException(nameof(serializationFileParameter));
+
+            if (serializationParameter == null)
+                throw new ArgumentNullException(nameof(serializationParameter));
+
+            if (!Directory.Exists(serializationFileParameter.FolderFullPath))
             {
-                throw new ArgumentException($"{folderFullPath} is not a correct folder path");
+                throw new ArgumentException($"{serializationFileParameter.FolderFullPath} is not a correct folder path");
             }
 
-            var filePath = Path.Combine(folderFullPath, fileName);
+            var filePath = Path.Combine(serializationFileParameter.FolderFullPath, serializationFileParameter.FileName);
             var fileExists = File.Exists(filePath);
-            using (var sw = new StreamWriter(filePath, append, encoding))
+            using (var sw = new StreamWriter(filePath, serializationFileParameter.AppendFile, serializationFileParameter.FileEncoding))
             {
-                action(sw, objects, exportHeader, sortTFields);
+                action(sw, serializationParameter);
             }
 
             return filePath;
@@ -48,19 +53,21 @@ namespace Common.Serialization
         /// <summary>
         /// Serializes the list as text.
         /// </summary>
-        /// <typeparam name="T">Type of the object</typeparam>
-        /// <param name="folderFullPath">The folder full path.</param>
-        /// <param name="fileName">Name of the file.</param>
-        /// <param name="append">if set to <c>true</c> [append].</param>
-        /// <param name="exportHeader">if set to <c>true</c> [export header].</param>
-        /// <param name="encoding">The encoding.</param>
-        /// <param name="objects">The objects.</param>
-        public static void SerializeTxt<T>(string folderFullPath, string fileName, bool append, bool exportHeader,
-            Encoding encoding, IEnumerable<T> objects)
+        /// <exception cref="ArgumentNullException">Thrown when one or more required arguments are null.</exception>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="serializationFileParameter">The file parameter.</param>
+        /// <param name="serializationParameter">    The input parameter for the serialization.</param>
+        public static void SerializeTxt<T>(SerializationFileParameter serializationFileParameter, SerializationParameter<T> serializationParameter)
         {
-            Serialize(folderFullPath, fileName, append, exportHeader, true, encoding, objects, (sw, objs, flag, sort) =>
+            if (serializationFileParameter == null)
+                throw new ArgumentNullException(nameof(serializationFileParameter));
+
+            if (serializationParameter == null)
+                throw new ArgumentNullException(nameof(serializationParameter));
+
+            Serialize(serializationFileParameter, serializationParameter, (sw, param) =>
             {
-                foreach (var record in objs)
+                foreach (var record in serializationParameter.Objects)
                 {
                     sw.WriteLine(record.ToString());
                 }
@@ -76,7 +83,9 @@ namespace Common.Serialization
         /// <param name="objects">The objects.</param>
         public static void SerializeTxt<T>(string folderFullPath, string fileName, IEnumerable<T> objects)
         {
-            SerializeTxt(folderFullPath, fileName, false, false, Encoding.Default, objects);
+            var serializationParameter = new SerializationParameter<T>(objects, false);
+            var fileParameter = new SerializationFileParameter(folderFullPath, fileName);
+            SerializeTxt(fileParameter, serializationParameter);
         }
         #endregion
     }

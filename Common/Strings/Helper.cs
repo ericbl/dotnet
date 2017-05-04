@@ -275,7 +275,7 @@ namespace Common.Strings
             else
             {
                 bool hasLanguage = !string.IsNullOrEmpty(language);
-                if (hasLanguage)
+                if (hasLanguage || getKeyOnly)
                 {
                     var attribute = (LocalizedDescriptionAttribute)Attribute.GetCustomAttribute(memberInfo, typeof(LocalizedDescriptionAttribute));
                     if (attribute != null)
@@ -288,7 +288,7 @@ namespace Common.Strings
                     else
                         hasLanguage = false;
                 }
-                if (!hasLanguage)
+                if (!hasLanguage && !getKeyOnly)
                 {
                     var attribute = (DescriptionAttribute)Attribute.GetCustomAttribute(memberInfo, typeof(DescriptionAttribute));
                     if (attribute != null)
