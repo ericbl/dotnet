@@ -8,6 +8,7 @@ namespace Common.Logging
     public class TimeLogging
     {
         private readonly ILogger logger;
+        private readonly ILogger eventLogger;
         private readonly string callerActivity;
         private readonly DateTime startInitial; // set only once        
         private DateTime start; // reset after sub activity        
@@ -16,8 +17,9 @@ namespace Common.Logging
         /// Initializes a new instance of the <see cref="TimeLogging" /> class.
         /// </summary>
         /// <param name="callerActivity">The main activity/action of the caller.</param>
-        public TimeLogging(string callerActivity) 
-            : this(null, callerActivity)
+        /// <param name="serviceEventLog">The service event log.</param>
+        public TimeLogging(string callerActivity, System.Diagnostics.EventLog serviceEventLog = null)
+            : this(null, callerActivity, serviceEventLog)
         {
         }
 
@@ -26,10 +28,14 @@ namespace Common.Logging
         /// </summary>
         /// <param name="logger">The logger. If null, a TraceLogger will be created.</param>
         /// <param name="callerActivity">The main activity/action of the caller.</param>
-        public TimeLogging(ILogger logger, string callerActivity)
+        /// <param name="serviceEventLog">The service event log.</param>
+        public TimeLogging(ILogger logger, string callerActivity, System.Diagnostics.EventLog serviceEventLog = null)
         {
             this.logger = logger != null ? logger : new TraceLogger();
             this.logger.WriteInfo(Environment.NewLine); // new empty line to separate batches in the log files
+            this.eventLogger = serviceEventLog != null
+                ? new EventLogger(serviceEventLog)
+                : Security.Utils.IsCurrentUserAdmin() ? new EventLogger() : null;
             startInitial = DateTime.Now;
             start = startInitial;
             this.callerActivity = callerActivity;
@@ -44,6 +50,14 @@ namespace Common.Logging
         /// The logger.
         /// </value>
         public ILogger Logger { get { return logger; } }
+
+        /// <summary>
+        /// Gets the event logger.
+        /// </summary>
+        /// <value>
+        /// The event logger.
+        /// </value>
+        public ILogger EventLogger { get { return eventLogger; } }
 
         private void LogCurrentTime(string action)
         {

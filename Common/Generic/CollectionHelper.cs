@@ -76,7 +76,7 @@ namespace Common.Generic
         /// <param name="action">The action.</param>
         public static void ForEach<T>(this IEnumerable<T> list, Action<T> action)
         {
-            if (list != null)
+            if (list != null && action != null)
             {
                 foreach (T item in list)
                 {

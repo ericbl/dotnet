@@ -23,6 +23,7 @@ namespace Common.Generic
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that concatenate ALL properties of this instance. Would be use to quickly define full equality of objects.
+        /// Will also be use to compare object along with <seealso cref="EquatablePerStringBase.ToStringUnique()"/>, so the external object should be referred by their keys!
         /// </summary>
         /// <returns>
         /// A <see cref="System.String" /> that represents this instance.

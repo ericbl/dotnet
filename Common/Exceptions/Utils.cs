@@ -1,5 +1,4 @@
-﻿using Common.Generic;
-using Common.Logging;
+﻿using Common.Logging;
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -18,11 +17,12 @@ namespace Common.Exceptions
         /// <param name="serializeMsg">The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
         /// <param name="message">The input message.</param>
         /// <param name="defaultLogger">The default logger.</param>
-        public static void ProcessException(Exception ex, Action<string> serializeMsg, string message = "", ILogger defaultLogger = null)
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
+        public static void ProcessException(Exception ex, Action<string> serializeMsg, string message = "", ILogger defaultLogger = null, ILogger extraLogger = null)
         {
             if (ex == null)
             {
-                ProcessException(new ArgumentNullException(nameof(ex)), null);
+                ProcessException(new ArgumentNullException(nameof(ex)), null, defaultLogger, extraLogger);
                 return;
             }
 
@@ -49,6 +49,12 @@ namespace Common.Exceptions
             {
                 defaultLogger.WriteError(fullMsg);
             }
+
+            if (extraLogger != null)
+            {
+                extraLogger.WriteError(fullMsg);
+            }
+
             serializeMsg?.Invoke(fullMsg);
         }
 
@@ -59,9 +65,10 @@ namespace Common.Exceptions
         /// <param name="serializeMsg">The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
         /// <param name="entryObject">The entry object to be documented (using ToString()) when processing an exception.</param>
         /// <param name="defaultLogger">The default logger.</param>
-        public static void ProcessException(Exception ex, Action<string> serializeMsg, object entryObject, ILogger defaultLogger = null)
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
+        public static void ProcessException(Exception ex, Action<string> serializeMsg, object entryObject, ILogger defaultLogger = null, ILogger extraLogger = null)
         {
-            ProcessException(ex, serializeMsg, null, entryObject, defaultLogger);
+            ProcessException(ex, serializeMsg, null, entryObject, defaultLogger, extraLogger);
         }
 
         /// <summary>
@@ -72,28 +79,30 @@ namespace Common.Exceptions
         /// <param name="preProcessSpecialException">The pre process special exception.</param>
         /// <param name="entryObject">The entry object to be documented (using ToString()) when processing an exception.</param>
         /// <param name="defaultLogger">The default logger.</param>
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
         public static void ProcessException(Exception ex, Action<string> serializeMsg,
             Action<Exception> preProcessSpecialException, object entryObject,
-            ILogger defaultLogger = null)
+            ILogger defaultLogger = null, ILogger extraLogger = null)
         {
             preProcessSpecialException?.Invoke(ex);
-            ProcessException(ex, serializeMsg, entryObject == null ? string.Empty : "Error in " + entryObject.ToString(), defaultLogger);
+            ProcessException(ex, serializeMsg, entryObject == null ? string.Empty : "Error in " + entryObject.ToString(), defaultLogger, extraLogger);
         }
 
         /// <summary>
         /// Executes the method within a try/catch block.
         /// </summary>
         /// <typeparam name="T">.Type of the object</typeparam>
-        /// <param name="method">       The method.</param>
-        /// <param name="serializeMsg"> The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
-        /// <param name="entryObject">  (Optional) The entry object to be documented (using ToString()) when processing an exception.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="serializeMsg">The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
+        /// <param name="entryObject">(Optional) The entry object to be documented (using ToString()) when processing an exception.</param>
         /// <param name="defaultLogger">(Optional) The default logger.</param>
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
         /// <returns>
         /// the result of the method.
         /// </returns>
-        public static T TryCatchMethod<T>(Func<T> method, Action<string> serializeMsg, object entryObject = null, ILogger defaultLogger = null)
+        public static T TryCatchMethod<T>(Func<T> method, Action<string> serializeMsg, object entryObject = null, ILogger defaultLogger = null, ILogger extraLogger = null)
         {
-            return TryCatchMethod(method, serializeMsg, null, entryObject, defaultLogger);
+            return TryCatchMethod(method, serializeMsg, null, entryObject, defaultLogger, extraLogger);
         }
 
         /// <summary>
@@ -105,11 +114,12 @@ namespace Common.Exceptions
         /// <param name="preProcessSpecialException">The pre process method for special exception.</param>
         /// <param name="entryObject">The entry object to be documented (using ToString()) when processing an exception.</param>
         /// <param name="defaultLogger">The default logger.</param>
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
         /// <returns>
         /// the result of the method
         /// </returns>
         public static T TryCatchMethod<T>(Func<T> method, Action<string> serializeMsg,
-            Action<Exception> preProcessSpecialException, object entryObject = null, ILogger defaultLogger = null)
+            Action<Exception> preProcessSpecialException, object entryObject = null, ILogger defaultLogger = null, ILogger extraLogger = null)
         {
             T result;
             try
@@ -121,7 +131,7 @@ namespace Common.Exceptions
             }
             catch (Exception ex)
             {
-                ProcessException(ex, serializeMsg, preProcessSpecialException, entryObject, defaultLogger);
+                ProcessException(ex, serializeMsg, preProcessSpecialException, entryObject, defaultLogger, extraLogger);
                 result = default(T);
             }
             return result;
@@ -134,9 +144,10 @@ namespace Common.Exceptions
         /// <param name="serializeMsg">The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
         /// <param name="entryObject">The entry object to be documented (using ToString()) when processing an exception.</param>
         /// <param name="defaultLogger">The default logger.</param>
-        public static void TryCatchMethod(Action method, Action<string> serializeMsg, object entryObject = null, ILogger defaultLogger = null)
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
+        public static void TryCatchMethod(Action method, Action<string> serializeMsg, object entryObject = null, ILogger defaultLogger = null, ILogger extraLogger = null)
         {
-            TryCatchMethod(method, serializeMsg, null, entryObject, defaultLogger);
+            TryCatchMethod(method, serializeMsg, null, entryObject, defaultLogger, extraLogger);
         }
 
         /// <summary>
@@ -147,8 +158,9 @@ namespace Common.Exceptions
         /// <param name="preProcessSpecialException">The pre process special exception.</param>
         /// <param name="entryObject">The entry object.</param>
         /// <param name="defaultLogger">The default logger.</param>
+        /// <param name="extraLogger">(Optional) The extra logger.</param>
         public static void TryCatchMethod(Action method, Action<string> serializeMsg,
-            Action<Exception> preProcessSpecialException, object entryObject = null, ILogger defaultLogger = null)
+            Action<Exception> preProcessSpecialException, object entryObject = null, ILogger defaultLogger = null, ILogger extraLogger = null)
         {
             try
             {
@@ -156,7 +168,7 @@ namespace Common.Exceptions
             }
             catch (Exception ex)
             {
-                ProcessException(ex, serializeMsg, preProcessSpecialException, entryObject, defaultLogger);
+                ProcessException(ex, serializeMsg, preProcessSpecialException, entryObject, defaultLogger, extraLogger);
             }
         }
 

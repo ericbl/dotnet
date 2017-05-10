@@ -1,5 +1,4 @@
-﻿using Common.Exceptions;
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace Common.Logging
@@ -71,7 +70,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteWarning(Exception ex)
         {
-            Trace.TraceWarning(ExceptionFormat.FormatException(ex));
+            Trace.TraceWarning(LoggerBase.FormatException(ex));
         }
 
         /// <summary>
@@ -82,7 +81,7 @@ namespace Common.Logging
         /// <param name="parameter">Parameters of the formating string</param>
         public void WriteWarning(Exception ex, string format, params object[] parameter)
         {
-            Trace.TraceWarning(FormatLogEntry(ex, format, parameter));
+            Trace.TraceWarning(LoggerBase.FormatLogEntry(ex, format, parameter));
         }
 
         /// <summary>
@@ -110,7 +109,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteError(Exception ex)
         {
-            Trace.TraceError(ExceptionFormat.FormatException(ex));
+            Trace.TraceError(LoggerBase.FormatException(ex));
         }
 
         /// <summary>
@@ -121,17 +120,7 @@ namespace Common.Logging
         /// <param name="parameter">Parameters of the formating string</param>
         public void WriteError(Exception ex, string format, params object[] parameter)
         {
-            Trace.TraceError(FormatLogEntry(ex, format, parameter));
-        }
-
-        private static string FormatLogEntry(Exception ex, string format, params object[] parameter)
-        {
-            return string.Format(format, parameter) + Environment.NewLine + FormatException(ex);
-        }
-
-        private static string FormatException(Exception ex)
-        {
-            return ExceptionFormat.FormatException(ex);
+            Trace.TraceError(LoggerBase.FormatLogEntry(ex, format, parameter));
         }
     }
 }

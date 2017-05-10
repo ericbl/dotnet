@@ -231,7 +231,7 @@ namespace Common.SharePoint
             if (itemsModified > 0)
             {
                 ExecuteQueryAndWait(clientContext);
-                logger.WriteInfo($"The property {propertyName} has been updated to for {itemsModified} items on the SharePoint list {listTitle}.");
+                logger.WriteInfo($"The property {propertyName} has been updated to {propertyValue} for {itemsModified} items on the SharePoint list {listTitle}.");
             }
 
             return itemsModified;

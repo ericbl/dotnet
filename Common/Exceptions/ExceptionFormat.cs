@@ -207,24 +207,25 @@ namespace Common.Exceptions
         /// <returns>
         /// A HostException.
         /// </returns>
-        public static Exception Deserialize(string serializedException)
+        public static HostException Deserialize(string serializedException)
         {
             if (string.IsNullOrEmpty(serializedException))
             {
                 return null;
             }
 
-            return DeserializeException(serializedException);
+            var exception = DeserializeException(serializedException);
+            return new HostException("Auf dem Server ist während der Verarbeitung der Anfrage ein Fehler aufgetreten.", exception);
         }
 
         /// <summary>
         /// Deserialize the exception and throw it.
         /// </summary>
-        /// <exception cref="Exception">Thrown when the exception is properly de serialized.</exception>
+        /// <exception cref="HostException">Thrown when the exception is properly de serialized.</exception>
         /// <param name="serializedException">The exception serialized using the <seealso cref="Serialize(Exception)"/> method</param>
         public static void DeserializeAndThrow(string serializedException)
         {
-            Exception hostException = Deserialize(serializedException);
+            HostException hostException = Deserialize(serializedException);
             if (hostException != null)
             {
                 throw hostException;

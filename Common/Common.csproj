@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="Exceptions\ExceptionFormat.cs" />
     <Compile Include="Exceptions\Utils.cs" />
+    <Compile Include="Exceptions\HostException.cs" />
     <Compile Include="Exceptions\UserException.cs" />
     <Compile Include="Extensions\EnumExtension.cs" />
     <Compile Include="Extensions\ExtensionMethods.cs" />
@@ -68,6 +69,8 @@
     <Compile Include="Generic\GenericChangeByStringComparison.cs" />
     <Compile Include="Generic\TypeObjectConverter.cs" />
     <Compile Include="Generic\TypeParser.cs" />
+    <Compile Include="Logging\EventLogger.cs" />
+    <Compile Include="Logging\LoggerBase.cs" />
     <Compile Include="Network\Utils.cs" />
     <Compile Include="Reflection\PathDescriptionAttribute.cs" />
     <Compile Include="Reflection\ObjectPropertyChanged.cs" />
@@ -92,6 +95,7 @@
     <Compile Include="Files\IniFileText.cs" />
     <Compile Include="Files\IOUtils.cs" />
     <Compile Include="Files\RegistryIni.cs" />
+    <Compile Include="Security\Utils.cs" />
     <Compile Include="Serialization\BinaryCompression.cs" />
     <Compile Include="Serialization\SerializationFileParameter.cs" />
     <Compile Include="Serialization\SerializationParameter.cs" />

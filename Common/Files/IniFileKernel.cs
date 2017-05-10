@@ -6,7 +6,7 @@ namespace Common.Files
     /// <summary>
     /// Manage reading and writing an .ini file using kernel32 methods
     /// </summary>
-    class INIFile
+    public static class IniFileKernel
     {
         [DllImport("kernel32.dll")]
         private static extern int WritePrivateProfileString(string ApplicationName, string KeyName, string StrValue, string FileName);
