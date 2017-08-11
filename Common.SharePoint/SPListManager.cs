@@ -44,12 +44,13 @@ namespace Common.SharePoint
         /// Read the SharePoint list and generate objects from the list items.
         /// </summary>
         /// <param name="clientContext">The client context.</param>
-        /// <param name="listTitle">    The list title.</param>
-        /// <param name="queryFilters"> The filters specifying the query.</param>
+        /// <param name="listTitle">The list title.</param>
+        /// <param name="queryFilters">The filters specifying the query.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// List of created objects.
         /// </returns>
-        internal ListWithMetadata<T> TransformSPListToObjects(ClientContext clientContext, string listTitle, ICollection<SPListFilterBase> queryFilters)
+        internal ListWithMetadata<T> TransformSPListToObjects(ClientContext clientContext, string listTitle, ICollection<SPListFilterBase> queryFilters, string cultureInfo)
         {
             var resultList = new ListWithMetadata<T>(queryFilters: queryFilters);
 
@@ -62,7 +63,7 @@ namespace Common.SharePoint
 
             foreach (ListItem listItem in items)
             {
-                T createdObj = CreateObjectFromListItem(listItem);
+                T createdObj = CreateObjectFromListItem(listItem, cultureInfo);
                 if (createdObj != null)
                     resultList.List.Add(createdObj);
             }
@@ -105,6 +106,13 @@ namespace Common.SharePoint
 
             // load the list hier as local variable since it depends from the Context!
             var spList = LoadSPList(clientContext, listTitle, true);
+
+            //#if DEBUG
+            //            clientContext.Load(spList.Fields);
+            //            clientContext.ExecuteQuery();
+            //            var createableFields = FilterFieldsFromObjectProperties(spList.Fields).ToDictionary(f => f.InternalName);
+            //            int fieldsOk = createableFields.Count;
+            //#endif
 
             // Update the custom description of the list
             if (listSource.SetSourceDateProperty(spList.RootFolder.Properties))
@@ -451,7 +459,13 @@ namespace Common.SharePoint
         #endregion
 
         #region create logic
-        private T CreateObjectFromListItem(ListItem listItem)
+        /// <summary>
+        /// Creates the object from list item.
+        /// </summary>
+        /// <param name="listItem">The list item.</param>
+        /// <param name="cultureInfo">The culture information.</param>
+        /// <returns>The created object</returns>
+        private T CreateObjectFromListItem(ListItem listItem, string cultureInfo)
         {
             Dictionary<string, object> currentSpValues = listItem.FieldValues;
             T result = new T();
@@ -468,10 +482,24 @@ namespace Common.SharePoint
                             currentSpValue = ((Dictionary<string, object>)currentSpValue)["Label"];
                         }
 
-                        // convert value to type
-                        Type type = objectPropertiesPerName[propertyName].PropertyType;
-                        object convertedValue = TypeObjectConverter.ConvertObjectRecord(currentSpValue.ToString(), type);
-                        objectPropertiesPerName[propertyName].SetValue(result, convertedValue);
+                        // Convert value and set property
+                        if (currentSpValue is DateTime || currentSpValue is DateTime?)
+                        {
+                            var spDate = currentSpValue as DateTime?;
+                            if (spDate.HasValue)
+                            {
+                                // SharePoint saves the date in UTC, we need to convert them back to local time!
+                                var shiftedTime = spDate.Value.ToLocalTime();
+                                objectPropertiesPerName[propertyName].SetValue(result, shiftedTime);
+                            }
+                        }
+                        else
+                        {
+                            // convert value to type
+                            Type type = objectPropertiesPerName[propertyName].PropertyType;
+                            object convertedValue = TypeObjectConverter.ConvertObjectRecord(currentSpValue.ToString(), type, cultureInfo);
+                            objectPropertiesPerName[propertyName].SetValue(result, convertedValue);
+                        }
                     }
                 }
             }
@@ -562,6 +590,7 @@ namespace Common.SharePoint
                 {   // convert value to a SharePoint friendly format!
                     if (sourceValue is DateTime || sourceValue is DateTime?)
                     {
+                        // SharePoint requires the universal time!
                         sourceValue = ((DateTime)sourceValue).ToUniversalTime();
                     }
                     else if (sourceValue is Enum)
@@ -601,9 +630,20 @@ namespace Common.SharePoint
             return updated;
         }
 
+        private Field[] FilterFieldsFromObjectProperties(FieldCollection fields)
+        {
+            var sourceInternNames = objectPropertiesPerName.Keys.ToArray();
+            return FilterCopiableFields(fields, sourceInternNames);
+        }
+
         private static Field[] FilterCopiableFields(FieldCollection fields, FieldCollection fieldsSource)
         {
             var sourceInternNames = fieldsSource.Select(f => f.InternalName).ToArray();
+            return FilterCopiableFields(fields, sourceInternNames);
+        }
+
+        private static Field[] FilterCopiableFields(FieldCollection fields, string[] sourceInternNames)
+        {
             return fields.Where(field => !field.ReadOnlyField && !field.Hidden
                 && field.InternalName != "Attachments" && field.InternalName != "ContentType"
                 && sourceInternNames.Contains(field.InternalName)).ToArray();

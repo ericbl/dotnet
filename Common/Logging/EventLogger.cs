@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Security;
 
 namespace Common.Logging
 {
@@ -32,18 +33,12 @@ namespace Common.Logging
 
             this.currentAppName = currentAppName;
 
-            if (Security.Utils.IsCurrentUserAdmin())
-            {
-                // Check if the event source exists. If not create it.
-                if (!EventLog.SourceExists(currentAppName))
-                {
-                    EventLog.CreateEventSource(currentAppName, "Application");
-                }
-                // Create an instance of EventLog
-                this.eventLog = new EventLog();
-                // Set the source name for writing log entries.
-                eventLog.Source = currentAppName;
-            }
+            // Check if the event source exists, create it if admin role, or use default application
+            string eventSource = CreateEventSource(currentAppName);
+            // Create an instance of EventLog
+            this.eventLog = new EventLog();
+            // Set the source name for writing log entries.
+            eventLog.Source = eventSource;
         }
 
         /// <summary>
@@ -121,6 +116,27 @@ namespace Common.Logging
                 eventLog.WriteEntry(message, level, eventId);
                 // Don't close the eventLog here, it will be done at the end when the instance is disposed            
             }
+        }
+
+        private string CreateEventSource(string currentAppName)
+        {
+            string eventSource = currentAppName;
+            bool sourceExists;
+            try
+            {
+                // searching the source throws a security exception ONLY if not exists!
+                sourceExists = EventLog.SourceExists(eventSource);
+                if (!sourceExists && Security.Utils.IsCurrentUserAdmin(true)) // role check should always return true here, otherwise, the exception is thrown
+                {
+                    EventLog.CreateEventSource(eventSource, "Application");
+                }
+            }
+            catch (SecurityException)
+            {
+                eventSource = "Application";
+            }
+
+            return eventSource;
         }
     }
 }

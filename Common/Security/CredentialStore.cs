@@ -48,6 +48,18 @@ namespace Common.Security
                 targetMachineUser = Console.ReadLine();
             }
 
+            if (string.IsNullOrEmpty(targetMachineUser))
+            {
+                targetMachineUser = Environment.UserName;
+            }
+
+            if (string.IsNullOrEmpty(domain))
+            {
+                // extract domain from user name or consider current domain
+                var splitName = targetMachineUser.Split('@');
+                domain = (splitName.Length == 2) ? splitName[1] : Environment.UserDomainName;
+            }
+
             var targetMachinePwd = Utils.GetPasswordFromConsole();
 
             return new NetworkCredential

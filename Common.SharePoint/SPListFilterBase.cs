@@ -1,6 +1,4 @@
-﻿using Microsoft.SharePoint.Client;
-
-namespace Common.SharePoint
+﻿namespace Common.SharePoint
 {
     /// <summary>
     /// A sp list filter base.

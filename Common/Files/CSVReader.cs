@@ -2,9 +2,10 @@
 // Copyright (c) 2017 Eric B. All rights reserved.
 // </copyright>
 // <author>Eric</author>
-// <date>18.04.2017</date>
+// <date>18.04.2017, last updated 29.06.2017</date>
 // <summary>Implements the CSV reader class</summary>
 using Common.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,15 +18,47 @@ namespace Common.Files
     public static class CSVReader
     {
         /// <summary>
+        /// Filters the collection to serialize by removing existing items. T MUST implements equals used by list.Contains()!!
+        /// </summary>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="objects">The objects.</param>
+        /// <param name="folderFullPath">The folder full path.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>Filtered collection. If the target file does not exists, returns all objects</returns>
+        public static IEnumerable<T> FilterCollectionToSerializeByRemovingExistingItems<T>(string folderFullPath, string fileName, IEnumerable<T> objects)
+          where T : new()
+        {
+            IEnumerable<T> results = null;
+            if (objects != null && objects.Count() > 0)
+            {
+                string filePath = IOUtils.CheckAndCombinePath(folderFullPath, fileName, false);
+                if (System.IO.File.Exists(filePath))
+                {
+                    // filter objects
+                    IList<T> previousList = ReadCsvFile<T>(filePath, true);
+                    results = objects.Where(item => !previousList.Contains(item)).ToArray();
+                }
+                else
+                {   // no file, nothing to filter, return the full input list!
+                    results = objects.ToArray();
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
         /// Reads the CSV file and transform it as a list of object
         /// </summary>
-        /// <typeparam name="T">Type of the object </typeparam>
+        /// <typeparam name="T">Type of the object</typeparam>
         /// <param name="fileFullPath">The file full path.</param>
         /// <param name="firstLineIsHeader">if set to <c>true</c>, consider the first line as the header.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// A list of objects
         /// </returns>
-        public static IList<T> ReadCsvFile<T>(string fileFullPath, bool firstLineIsHeader = true)
+        /// <exception cref="Common.Exceptions.UserException">Error creating an instance</exception>
+        public static IList<T> ReadCsvFile<T>(string fileFullPath, bool firstLineIsHeader = true, string cultureInfo = null)
             where T : new()
         {
             if (string.IsNullOrEmpty(fileFullPath))
@@ -59,9 +92,19 @@ namespace Common.Files
             var list = new List<T>();
             for (int lineNr = firstLineNrData; lineNr < lines.Length; lineNr++)
             {
-                string[] rowData = lines[lineNr].Split(delimiter);
-                T item = CreateObjectFromStringArray.CreateObject<T>(fieldDict, rowData);
-                list.Add(item);
+                try
+                {
+                    string[] rowData = lines[lineNr].Split(delimiter);
+                    if (rowData == null)
+                        continue;
+                    T item = CreateObjectFromStringArray.CreateObject<T>(fieldDict, rowData, cultureInfo);
+                    list.Add(item);
+                }
+                catch (Exception e)
+                {
+                    string errorMsg = $"Error creating an instance of {typeof(T)}, the row data are {lines[lineNr]} and text delimiter is {delimiter}!";
+                    throw new Common.Exceptions.UserException(errorMsg, e);
+                }
             }
 
             return list;

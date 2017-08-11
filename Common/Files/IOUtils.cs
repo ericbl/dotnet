@@ -562,6 +562,45 @@ namespace Common.Files
 
         #endregion
 
+        #region Serialize list
+        /// <summary>
+        /// Read the list t the list append.
+        /// </summary>
+        /// <typeparam name="T">Type of the object</typeparam>
+        /// <param name="targetFolderPath">The target folder path.</param>
+        /// <param name="list">The list.</param>
+        /// <param name="fileName">Name of the file.</param>
+        public static void SerializeListAppend<T>(string targetFolderPath, IEnumerable<T> list, string fileName = null)
+         where T : new()
+        {
+            if (list != null && list.Count() > 0)
+            {
+                string csvFileName = GenerateFilenameFromType<T>(fileName, ".csv");
+                var itemToAppend = CSVReader.FilterCollectionToSerializeByRemovingExistingItems(targetFolderPath, csvFileName, list);
+                if (itemToAppend != null && itemToAppend.Count() > 0)
+                    CsvSerializer.SerializeCollection(targetFolderPath, csvFileName, itemToAppend, true, true);
+            }
+        }
+
+        /// <summary>
+        /// Serializes the list with date.
+        /// </summary>
+        /// <typeparam name="T">Type of the object</typeparam>
+        /// <param name="targetFolderPath">The target folder path.</param>
+        /// <param name="list">The list.</param>
+        /// <param name="modelVersion">The model version.</param>
+        /// <param name="fileName">Name of the file.</param>
+        public static void SerializeListWithDate<T>(string targetFolderPath, IEnumerable<T> list, DateTime modelVersion, string fileName = null)
+        {
+            if (list != null && list.Count() > 0)
+            {
+                fileName = GenerateFilenameFromType<T>(fileName);
+                string fileNameWithExt = CreateCSVFileName(fileName, modelVersion);
+                CsvSerializer.SerializeCollection(targetFolderPath, fileNameWithExt, list);
+            }
+        }
+        #endregion
+
         #region Zip file
         private const string zipExtension = ".zip";
 
@@ -653,19 +692,20 @@ namespace Common.Files
         /// <param name="createFileAction">The action to create the files in the temp folder.</param>
         /// <param name="keepAndRenameExistingFileIfDifferent">if set to <c>true</c> and the zip is different, keep that file and rename it or make a copy.</param>
         /// <param name="copyInsteadOfRename">if set to <c>true</c> copy file and remove instead of move. Move/Rename is not allowed on SharePoint!.</param>
+        /// <param name="copyToTargetAndRemoveOlderFiles">if set to <c>true</c> copy to target and remove older files.</param>
         /// <returns>
         /// A tuple with the zip full path and a flag whether the zip file has been created.
         /// </returns>
         /// <exception cref="ArgumentNullException">No action method defined in CreateCSVFileAndZipIt</exception>
         public static Tuple<string, bool> FilesGeneratedByActionToTargetAndCreateZipArchive(string targetFolderForGeneratedFiles, string generatedFilePattern,
             string subArchiveFolderForZip, string zipFileSuffix, DateTime modelVersion, Action<string> createFileAction,
-            bool keepAndRenameExistingFileIfDifferent = false, bool copyInsteadOfRename = false)
+            bool keepAndRenameExistingFileIfDifferent = false, bool copyInsteadOfRename = false, bool copyToTargetAndRemoveOlderFiles = false)
         {
             // Run the action to generate the files in the temp folder
             string tmpFolderForAction = GenerateFilesOnTempFolder(createFileAction);
 
             return CreateZipFromFilesInTmpFolderAndCopyFilesToTargetFolder(tmpFolderForAction, targetFolderForGeneratedFiles, generatedFilePattern,
-                subArchiveFolderForZip, zipFileSuffix, modelVersion, keepAndRenameExistingFileIfDifferent, copyInsteadOfRename);
+                subArchiveFolderForZip, zipFileSuffix, modelVersion, keepAndRenameExistingFileIfDifferent, copyInsteadOfRename, copyToTargetAndRemoveOlderFiles);
         }
 
         /// <summary>
@@ -947,6 +987,27 @@ namespace Common.Files
         private static string GetDateTimeString(DateTime date, bool shortDate)
         {
             return shortDate ? date.ToShortDateStringFixedYearFirst() : date.ToFileNameString();
+        }
+
+        /// <summary>
+        /// Generates the filename of the type and add an optional extension: typeof(T).Name + extension
+        /// </summary>
+        /// <typeparam name="T">Type of the object</typeparam>
+        /// <param name="filename">The filename.</param>
+        /// <param name="extension">The extension.</param>
+        /// <returns>filename</returns>
+        public static string GenerateFilenameFromType<T>(string filename = null, string extension = null)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                filename = typeof(T).Name;
+                if (!string.IsNullOrEmpty(extension))
+                {
+                    filename += extension;
+                }
+            }
+
+            return filename;
         }
         #endregion
 

@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace Common.Server.OpenXml
+namespace Common.OpenXml
 {
     /// <summary>
     /// Import Excel file (xlsx) to generic list using DocumentFormat.OpenXml
@@ -71,7 +71,7 @@ namespace Common.Server.OpenXml
         public static IList<T> GetDataToList<T>(
             FilePathOrStream filePathOrStream,
             string sheetName,
-            Func<IEnumerable<MemberInfo>, IList<string>, IList<string>, bool, T> addCustomObject)
+            Func<IEnumerable<MemberInfo>, IList<string>, IList<string>, bool, string, T> addCustomObject)
         {
             if (filePathOrStream == null)
             {
@@ -114,7 +114,7 @@ namespace Common.Server.OpenXml
         private static IList<T> XLDocumentToList<T>(
             SpreadsheetDocument document,
             string sheetName,
-            Func<IEnumerable<MemberInfo>, IList<string>, IList<string>, bool, T> addCustomObject)
+            Func<IEnumerable<MemberInfo>, IList<string>, IList<string>, bool, string, T> addCustomObject)
         {
             if (document == null)
             {
@@ -189,7 +189,7 @@ namespace Common.Server.OpenXml
                     }
 
                     //Calls the delegated function to add it to the collection.
-                    resultList.Add(addCustomObject(properties, rowData, columnNames, LowerAllCollumnNames));
+                    resultList.Add(addCustomObject(properties, rowData, columnNames, LowerAllCollumnNames, null));
                 }
             }
 

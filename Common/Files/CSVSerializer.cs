@@ -33,19 +33,20 @@ namespace Common.Files
         /// Serializes the collection to Comma Separated Value (CSV) format.
         /// </summary>
         /// <typeparam name="T">Type of the items.</typeparam>
-        /// <param name="exportFolderPath">         The export folder path.</param>
-        /// <param name="filename">                 The filename.</param>
-        /// <param name="collection">               The collection.</param>
+        /// <param name="exportFolderPath">The export folder path.</param>
+        /// <param name="filename">The filename.</param>
+        /// <param name="collection">The collection.</param>
         /// <param name="filterWithIgnoreAttribute">(Optional) True to filter with ignore attribute.</param>
+        /// <param name="append">(Optional) if set to <c>true</c> append to existing file. Otherwise, overwrite the file.</param>
         /// <returns>
         /// The full path of the serialized file.
         /// </returns>
-        public static string SerializeCollection<T>(string exportFolderPath, string filename, IEnumerable<T> collection, bool filterWithIgnoreAttribute = true)
+        public static string SerializeCollection<T>(string exportFolderPath, string filename, IEnumerable<T> collection, bool filterWithIgnoreAttribute = true, bool append = false)
         {
             string filePath = null;
             if (collection.Count() > 0)
             {
-                filePath = Serialize(exportFolderPath, filename, objects: collection, append: false, sortTFields: false);
+                filePath = Serialize(exportFolderPath, filename, objects: collection, append: append, sortTFields: false);
             }
             return filePath;
         }
@@ -67,8 +68,20 @@ namespace Common.Files
             string folderFullPath, string fileName, bool append, IEnumerable<T> objects, bool sortTFields = false, bool filterWithIgnoreAttribute = true)
         {
             var fileParameter = new SerializationFileParameter(folderFullPath, fileName, append);
-            var serializationParameter = new SerializationParameter<T>(objects, true, sortTFields, filterWithIgnoreAttribute);
-            return SerializeUtils.Serialize(fileParameter, serializationParameter, Serialize);
+            string filePath = fileParameter.GetFileFullPath();
+            bool exportHeader = true;
+            if (append && File.Exists(filePath))
+            {
+                exportHeader = false;
+            }
+
+            if (objects.Count() > 0)
+            {
+                var serializationParameter = new SerializationParameter<T>(objects, exportHeader, sortTFields, filterWithIgnoreAttribute);
+                return SerializeUtils.Serialize(fileParameter, serializationParameter, Serialize);
+            }
+
+            return filePath;
         }
 
         /// <summary>
@@ -88,7 +101,7 @@ namespace Common.Files
                 : Reflection.Utils.GetAllFieldsAndPropertiesOfClass(type, serializationParameter.FilterWithIgnoreAttribute);
             if (serializationParameter.ExportHeader)
                 output.WriteLine(QuoteRecord(fields.Select(f => f.Name)));
-            foreach (var record in serializationParameter.Objects)
+            foreach (T record in serializationParameter.Objects)
             {
                 string line = QuoteRecord(FormatObject(fields, record));
                 output.WriteLine(line);

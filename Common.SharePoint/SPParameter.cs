@@ -19,8 +19,6 @@
                 throw new ArgumentNullException(nameof(sharepointUri));
             if (string.IsNullOrEmpty(sharePointUserName))
                 throw new ArgumentNullException(nameof(sharePointUserName));
-            if (string.IsNullOrEmpty(sharePointFolderPath))
-                throw new ArgumentNullException(nameof(sharePointFolderPath));
 
             SharePointUri = new Uri(sharepointUri);
             SharePointUserName = sharePointUserName;

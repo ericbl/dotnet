@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Common.Generic;
+using Common.Logging;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -86,6 +88,36 @@ namespace Common.Strings
         public static string ToShortDateString(this DateTime? date)
         {
             return date.HasValue ? date.Value.ToShortDateString() : string.Empty;
+        }
+
+
+        /// <summary>
+        /// Format the date only, as defined by the given culture info.
+        /// </summary>
+        /// <param name="date">The date.</param>
+        /// <param name="cultureInfo">The culture information, e.g. de-CH</param>
+        /// <returns>
+        /// A string representation of the date
+        /// </returns>
+        public static string ToShortDateString(this DateTime date, string cultureInfo)
+        {
+            return date.ToString("d", GetProviderFromCultureInfo(cultureInfo));
+        }
+
+        /// <summary>
+        /// Gets the provider from culture information.
+        /// </summary>
+        /// <param name="cultureInfo">The culture information.</param>
+        /// <returns></returns>
+        public static IFormatProvider GetProviderFromCultureInfo(string cultureInfo)
+        {
+            IFormatProvider provider;
+            if (string.IsNullOrEmpty(cultureInfo))
+                provider = CultureInfo.CurrentCulture;
+            else
+                provider = CultureInfo.GetCultureInfo(cultureInfo);
+
+            return provider;
         }
         #endregion
 
@@ -348,6 +380,59 @@ namespace Common.Strings
         }
 
         private static Dictionary<Tuple<string, string>, string> localizationCache = new Dictionary<Tuple<string, string>, string>();
+        #endregion
+
+        #region Format Telephone number
+        /// <summary>
+        /// Formats the telephone number.
+        /// </summary>
+        /// <param name="inputTelNumber">The input tel number.</param>
+        /// <returns>The formated telephone number</returns>
+        public static string FormatTelephoneNumber(this string inputTelNumber)
+        {
+            string output = inputTelNumber;
+            if (!string.IsNullOrEmpty(inputTelNumber))
+            {
+                // CH: +41 xx xxx xx xx, given from Abacus without space as +41xxxxxxxxx
+                if (inputTelNumber.StartsWith("+41") || inputTelNumber.StartsWith("41"))
+                {
+                    long telLong;
+                    if (long.TryParse(inputTelNumber, out telLong))
+                    {
+                        output = string.Format("+{0:## ## ### ## ##}", telLong);
+                    }
+                }
+            }
+
+            return output;
+        }
+        #endregion
+
+        #region Log list of string
+        /// <summary>
+        /// Logs the messages.
+        /// </summary>
+        /// <param name="messages">The messages.</param>
+        /// <param name="logger">The logger.</param>
+        /// <param name="loggerLevel">The logger level.</param>
+        public static void LogMessages(IEnumerable<string> messages, ILogger logger, LoggerLevel loggerLevel)
+        {
+            switch (loggerLevel)
+            {
+                case LoggerLevel.Info:
+                    messages.ForEach(msg => logger.WriteInfo(msg));
+                    break;
+                case LoggerLevel.Warning:
+                    messages.ForEach(msg => logger.WriteWarning(msg));
+                    break;
+                case LoggerLevel.Error:
+                    messages.ForEach(msg => logger.WriteError(msg));
+                    break;
+                default:
+                    logger.WriteError($"Wrong enum value {nameof(loggerLevel)}: {loggerLevel}");
+                    break;
+            }
+        }
         #endregion
     }
 }

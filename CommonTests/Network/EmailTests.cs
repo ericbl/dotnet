@@ -6,17 +6,13 @@ namespace Common.Network.Tests
     [TestClass()]
     public class EmailTests
     {
-        private const string myEmail1 = "fillwithYourEmail@outlook.com";
-        private const string myEmail2 = "fillwithYour2ndEmail@outlook.com";
-        private const string myEmail3 = "fillwithYour2ndEmail@myDomain.com";
-
         [TestMethod()]
         public void CreateAndSendEmailOutlookTest()
         {
-            NetworkCredential networkCredential = Windows.WebCredentialMgr.GetCredential(myEmail1);
+            NetworkCredential networkCredential = Windows.WebCredentialMgr.GetCredential("abacusdkh@outlook.com");
             if (networkCredential != null)
             {
-                Email email = new Email("smtp.live.com", true, networkCredential, myEmail2, "test email", "test email via outlook ssl", false, null);
+                Email email = new Email("smtp.live.com", true, networkCredential, "eric.bleher@kloeckner.com", "test email", "test email via outlook ssl", false, null);
                 email.SendInTryCatch();
             }
         }
@@ -24,7 +20,7 @@ namespace Common.Network.Tests
         [TestMethod()]
         public void CreateAndSendEmailLocalTest()
         {
-            Email email = new Email(myEmail1, myEmail3, "test email", "test email from local server", null);
+            Email email = new Email("abacusdkh@collab.com", "eric.bleher@kloeckner.com", "test email", "test email from local server", null);
             email.SendInTryCatch();
 
         }

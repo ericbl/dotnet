@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Common.Strings;
+using System;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 
@@ -136,25 +137,43 @@ namespace Common.Generic
         /// Converts the propertyValue via a simple call of ChangeType with destination type is typeof(T) or the underlying type if T is nullable.
         /// </summary>
         /// <typeparam name="T">Generic type</typeparam>
-        /// <param name="propertyStr">The property string.</param>
+        /// <param name="propertyValue">The property string.</param>
         /// <param name="formatProvider">The format provider. CurrentCulture per default when let null</param>
         /// <returns>
         /// The converted property to T or the default value of T
         /// </returns>
-        public static T ConvertTypeChangeTypeNullable<T>(string propertyStr, IFormatProvider formatProvider = null)
+        public static T ConvertTypeChangeTypeNullable<T>(string propertyValue, IFormatProvider formatProvider = null)
+        {
+            object result = ConvertTypeChangeTypeNullable(typeof(T), propertyValue, formatProvider);
+            if (result == null)
+                return default(T);
+
+            return (T)result;
+        }
+
+        /// <summary>
+        /// Converts the propertyValue via a simple call of ChangeType with destination type is typeof(T) or the underlying type if T is nullable.
+        /// </summary>
+        /// <param name="destinationType">Type of the property.</param>
+        /// <param name="propertyValue">The property string.</param>
+        /// <param name="formatProvider">The format provider. CurrentCulture per default when let null</param>
+        /// <returns>
+        /// The converted property or null.
+        /// </returns>
+        public static object ConvertTypeChangeTypeNullable(Type destinationType, string propertyValue, IFormatProvider formatProvider = null)
         {
             if (formatProvider == null)
             {
                 formatProvider = System.Threading.Thread.CurrentThread.CurrentCulture; // default value of ChangeType when formatProvider is not set!
             }
-            if (!string.IsNullOrEmpty(propertyStr))
+            if (!string.IsNullOrEmpty(propertyValue))
             {
-                Type destinationType = typeof(T);
-                Type behindType = Nullable.GetUnderlyingType(destinationType);
-                Type targetType = behindType != null ? behindType : destinationType;
-                return (T)Convert.ChangeType(propertyStr, targetType, formatProvider);
+                Type underlyingType = Nullable.GetUnderlyingType(destinationType);
+                Type targetType = underlyingType != null ? underlyingType : destinationType;
+                return Convert.ChangeType(propertyValue, targetType, formatProvider);
             }
-            return default(T);
+
+            return null;
         }
 
         #endregion
@@ -164,12 +183,13 @@ namespace Common.Generic
         /// <summary>
         /// Convert object record.
         /// </summary>
-        /// <param name="record">    The record.</param>
+        /// <param name="record">The record.</param>
         /// <param name="targetType">Type of the target.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// The object converted record.
         /// </returns>
-        public static object ConvertObjectRecord(string record, Type targetType)
+        public static object ConvertObjectRecord(string record, Type targetType, string cultureInfo)
         {
             object convertedRecord;
             if (targetType == typeof(string))
@@ -181,11 +201,11 @@ namespace Common.Generic
             }
             if (targetType == typeof(DateTime?))
             {
-                convertedRecord = record.ToDateTimeNullable();
+                convertedRecord = record.ToDateTimeNullable(cultureInfo);
             }
             else if (targetType == typeof(DateTime))
             {
-                convertedRecord = record.ToDateTime();
+                convertedRecord = record.ToDateTime(cultureInfo);
             }
             else if (targetType == typeof(bool?))
             {
@@ -225,7 +245,7 @@ namespace Common.Generic
         public static int ToInt32(this string source)
         {
             int outNum;
-            return int.TryParse(source, out outNum) ? outNum : 0;
+            return !string.IsNullOrEmpty(source) && int.TryParse(source, out outNum) ? outNum : 0;
         }
 
         /// <summary>
@@ -238,11 +258,11 @@ namespace Common.Generic
         public static int? ToInt32Nullable(this string source)
         {
             int outNum;
-            return int.TryParse(source, out outNum) ? outNum : (int?)null;
+            return !string.IsNullOrEmpty(source) && int.TryParse(source, out outNum) ? outNum : (int?)null;
         }
 
         /// <summary>
-        /// A string extension method that converts a source to an int 64.
+        /// A string extension method that converts a source to an int 64. Remove fist the white space!
         /// </summary>
         /// <param name="source">The source to act on.</param>
         /// <returns>
@@ -250,12 +270,13 @@ namespace Common.Generic
         /// </returns>
         public static long ToInt64(this string source)
         {
+            source = source.RemoveWhitespace();
             long outNum;
-            return long.TryParse(source, out outNum) ? outNum : 0;
+            return !string.IsNullOrEmpty(source) && long.TryParse(source, out outNum) ? outNum : 0;
         }
 
         /// <summary>
-        /// A string extension method that converts a source to an int 64 nullable.
+        /// A string extension method that converts a source to an int 64 nullable. Remove fist the white space!
         /// </summary>
         /// <param name="source">The source to act on.</param>
         /// <returns>
@@ -263,8 +284,12 @@ namespace Common.Generic
         /// </returns>
         public static long? ToInt64Nullable(this string source)
         {
+            if (string.IsNullOrEmpty(source))
+                return null;
+
+            source = source.RemoveWhitespace();
             long outNum;
-            return long.TryParse(source, out outNum) ? outNum : (long?)null;
+            return !string.IsNullOrEmpty(source) && long.TryParse(source, out outNum) ? outNum : (long?)null;
         }
 
         /// <summary>
@@ -277,7 +302,7 @@ namespace Common.Generic
         public static decimal ToDecimal(this string source)
         {
             decimal outNum;
-            return decimal.TryParse(source, out outNum) ? outNum : 0;
+            return !string.IsNullOrEmpty(source) && decimal.TryParse(source, out outNum) ? outNum : 0;
         }
 
         /// <summary>
@@ -290,7 +315,7 @@ namespace Common.Generic
         public static decimal? ToDecimalNullable(this string source)
         {
             decimal outNum;
-            return decimal.TryParse(source, out outNum) ? outNum : (decimal?)null;
+            return !string.IsNullOrEmpty(source) && decimal.TryParse(source, out outNum) ? outNum : (decimal?)null;
         }
 
         /// <summary>
@@ -303,7 +328,7 @@ namespace Common.Generic
         public static double ToDouble(this string source)
         {
             double outNum;
-            return double.TryParse(source, out outNum) ? outNum : 0;
+            return !string.IsNullOrEmpty(source) && double.TryParse(source, out outNum) ? outNum : 0;
         }
 
         /// <summary>
@@ -316,7 +341,7 @@ namespace Common.Generic
         public static double? ToDoubleNullable(this string source)
         {
             double outNum;
-            return double.TryParse(source, out outNum) ? outNum : (double?)null;
+            return !string.IsNullOrEmpty(source) && double.TryParse(source, out outNum) ? outNum : (double?)null;
         }
 
         /// <summary>
@@ -337,41 +362,46 @@ namespace Common.Generic
         /// A string extension method that converts a source to a date time.
         /// </summary>
         /// <param name="source">The source to act on.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// Source as a DateTime.
         /// </returns>
-        public static DateTime ToDateTime(this string source)
+        public static DateTime ToDateTime(this string source, string cultureInfo)
         {
-            return ToDateTime(source, false).Value;
+            return ToDateTime(source, false, cultureInfo).Value;
         }
 
         /// <summary>
         /// A string extension method that converts a source to a date time nullable.
         /// </summary>
         /// <param name="source">The source to act on.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// Source as a DateTime?
         /// </returns>
-        public static DateTime? ToDateTimeNullable(this string source)
+        public static DateTime? ToDateTimeNullable(this string source, string cultureInfo)
         {
             if (string.IsNullOrEmpty(source))
                 return null;
             else
-                return ToDateTime(source, true);
+                return ToDateTime(source, true, cultureInfo);
         }
 
         /// <summary>
         /// A string extension method that converts a source to a date time.
         /// </summary>
-        /// <param name="source">    The source to act on.</param>
+        /// <param name="source">The source to act on.</param>
         /// <param name="isNullable">True if this object is nullable.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// Source as a DateTime.
         /// </returns>
-        private static DateTime? ToDateTime(string source, bool isNullable)
+        private static DateTime? ToDateTime(string source, bool isNullable, string cultureInfo)
         {
             DateTime outDt;
-            if (DateTime.TryParse(source, out outDt))
+            IFormatProvider provider = string.IsNullOrEmpty(cultureInfo) ? null : Strings.Helper.GetProviderFromCultureInfo(cultureInfo);
+            bool parsed = provider == null ? DateTime.TryParse(source, out outDt) : DateTime.TryParse(source, provider, System.Globalization.DateTimeStyles.None, out outDt);
+            if (parsed)
             {
                 return outDt;
             }

@@ -20,7 +20,7 @@ namespace Common.Generic
         /// <param name="key">The key.</param>
         /// <param name="item">The item.</param>
         /// <param name="checkListContains">if set to <c>true</c> check if list contains item before add.</param>
-        public static void AddItemToDictionaryListOnce<TKey, TValue>(Dictionary<TKey, List<TValue>> dictionary, TKey key, TValue item, bool checkListContains = false)
+        public static void AddItemToDictionaryListOnce<TKey, TValue>(this Dictionary<TKey, List<TValue>> dictionary, TKey key, TValue item, bool checkListContains = false)
         {
             if (!dictionary.ContainsKey(key))
             {
@@ -38,7 +38,7 @@ namespace Common.Generic
         /// <typeparam name="T">Type of the objects in the collection</typeparam>
         /// <param name="collection">The collection.</param>
         /// <returns>The sorted list from the collection</returns>
-        public static IReadOnlyList<T> ToListAndSort<T>(this IEnumerable<T> collection)
+        public static List<T> ToListAndSort<T>(this IEnumerable<T> collection)
         {
             var list = collection as List<T>;
             if (list == null)
@@ -187,6 +187,51 @@ namespace Common.Generic
         public static void DisposeItemsInList<T>(this IList<T> list) where T : IDisposable
         {
             DeleteItemsInList(list, item => item.Dispose());
+        }
+
+
+        /// <summary>
+        /// Split the list into as many lists as required with the specified chunk size as maximal amount of items per list.
+        /// This is required to avoid going over the SharePoint CSOM message limit of 2 MB.
+        /// </summary>
+        /// <typeparam name="T">Type of the item in the collection</typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <param name="chunkSize">Size of the chunk.</param>
+        /// <returns>The collection of collections</returns>
+        /// <exception cref="ArgumentException">chunkSize must be positive</exception>
+        /// <seealso href="https://stackoverflow.com/questions/419019/split-list-into-sublists-with-linq/20953521#20953521"/>
+        public static IEnumerable<IEnumerable<T>> SplitIntoChunks<T>(this IEnumerable<T> enumerable, int chunkSize)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (chunkSize < 1)
+                throw new ArgumentException("chunkSize must be positive");
+
+            using (var e = enumerable.GetEnumerator())
+            {
+                while (e.MoveNext())
+                {
+                    var remaining = chunkSize;    // elements remaining in the current chunk
+                    var innerMoveNext = new Func<bool>(() => --remaining > 0 && e.MoveNext());
+
+                    yield return e.GetChunk(innerMoveNext);
+                    while (innerMoveNext()) {/* discard elements skipped by inner iterator */}
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the chunk.
+        /// </summary>
+        /// <typeparam name="T">Type of the item in the collection</typeparam>
+        /// <param name="enumerator">The enumerator.</param>
+        /// <param name="innerMoveNext">The function to move next.</param>
+        /// <returns>The chunk</returns>
+        private static IEnumerable<T> GetChunk<T>(this IEnumerator<T> enumerator, Func<bool> innerMoveNext)
+        {
+            do yield return enumerator.Current;
+            while (innerMoveNext());
         }
     }
 }

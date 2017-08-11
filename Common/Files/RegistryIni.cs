@@ -12,7 +12,7 @@
  
 using Microsoft.Win32;
 
-namespace Multipetros.Config
+namespace Common.Files
 {
     /// <summary>
     /// Values that represent registry nodes.

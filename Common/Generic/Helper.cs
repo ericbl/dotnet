@@ -60,7 +60,7 @@ namespace Common.Generic
         /// <param name="theType">The type.</param>
         /// <returns><c>true</c> if  whether the specified type is a null-able type; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsNullableType(Type theType)
+        public static bool IsNullableType(this Type theType)
         {
             return (theType.IsGenericType && theType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)));
         }

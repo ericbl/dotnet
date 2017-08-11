@@ -35,6 +35,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>filtredrules.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Release\Common.XML</DocumentationFile>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -47,6 +48,8 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.DirectoryServices.AccountManagement" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
@@ -106,7 +109,7 @@
     <Compile Include="Strings\StringCharacterFilter.cs" />
     <Compile Include="Security\CredentialStore.cs" />
     <Compile Include="Files\IniFileKernel.cs" />
-    <Compile Include="Serialization\CollectErrorMessages.cs" />
+    <Compile Include="Strings\CollectErrorMessages.cs" />
     <Compile Include="Serialization\ComputerInfo.cs" />
     <Compile Include="Security\Impersonator.cs" />
     <Compile Include="Security\NetworkConnection.cs" />

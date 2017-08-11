@@ -72,5 +72,14 @@ namespace Common.Serialization
         /// The file encoding.
         /// </value>
         public Encoding FileEncoding { get; private set; }
+
+        /// <summary>
+        /// Gets the full path of the file by combining the folder path and file name
+        /// </summary>
+        /// <returns>The full path of the file</returns>
+        public string GetFileFullPath()
+        {
+            return Files.IOUtils.CheckAndCombinePath(FolderFullPath, FileName, false);
+        }
     }
 }

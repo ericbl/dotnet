@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,6 +70,20 @@ namespace Common.Helper
         #endregion
 
         #region RunAsync, DatesWithSameYearAndMonth
+        /// <summary>
+        /// Executes the asynchronous operation.
+        /// </summary>
+        /// <typeparam name="T">Generic type parameter.</typeparam>
+        /// <param name="method">The method.</param>
+        /// <returns>
+        /// The asynchronous result that yields a T.
+        /// </returns>
+        public static Task<T> RunAsync<T>(Func<T> method)
+        {
+            CancellationToken cancellationToken = new CancellationToken();
+            return RunAsync(method, cancellationToken);
+        }
+
         /// <summary>
         /// Executes the asynchronous operation.
         /// </summary>

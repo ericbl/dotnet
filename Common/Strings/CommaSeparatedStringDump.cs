@@ -63,6 +63,9 @@ namespace Common.Strings
         /// </returns>
         public string DumpListCommaSeparated(IEnumerable<T> list, Func<T, string> toString, int maxLength = int.MaxValue)
         {
+            if (list == null)
+                return null;
+
             // Use default ToString() if no custom specified
             if (toString == null)
             {

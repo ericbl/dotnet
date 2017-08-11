@@ -86,7 +86,40 @@ namespace Common.Strings
         /// <returns>The input string without space</returns>
         public static string RemoveSpace(this string str)
         {
-            return str.Replace(" ", string.Empty);
+            return str.Remove(" ");
+        }
+
+        /// <summary>
+        /// Removes the specified string: replace it with empty string.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <param name="stringToRemove">The string to remove.</param>
+        /// <returns>The input string without the string to remove</returns>
+        public static string Remove(this string str, string stringToRemove)
+        {
+            return str.Replace(stringToRemove, string.Empty);
+        }
+
+        /// <summary>
+        /// Removes the whitespace.
+        /// </summary>
+        /// <param name="input">The input.</param>
+        /// <returns>The string without whitespace</returns>
+        public static string RemoveWhitespace(this string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return null;
+
+            var sb = new StringBuilder(input.Length);
+            foreach (char c in input)
+            {
+                if (!char.IsWhiteSpace(c))
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

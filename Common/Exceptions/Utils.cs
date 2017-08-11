@@ -154,7 +154,7 @@ namespace Common.Exceptions
         /// Tries the catch method.
         /// </summary>
         /// <param name="method">The method.</param>
-        /// <param name="serializeMsg">The serialize MSG.</param>
+        /// <param name="serializeMsg">The serialized message.</param>
         /// <param name="preProcessSpecialException">The pre process special exception.</param>
         /// <param name="entryObject">The entry object.</param>
         /// <param name="defaultLogger">The default logger.</param>

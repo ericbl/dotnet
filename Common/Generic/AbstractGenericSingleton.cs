@@ -5,7 +5,7 @@
     /// </summary>
     /// <typeparam name="T">Type of the class to instantiate, i.e. of the singleton instance</typeparam>
     /// <remarks>The new constraint specifies that any type argument in a generic class declaration must have a public parameterless constructor. To use the new constraint, the type cannot be abstract.</remarks>
-    public abstract class AbstractGenericSingleton<T> 
+    public abstract class AbstractGenericSingleton<T>
         where T : AbstractGenericSingleton<T>, new()
     {
         /// <summary>

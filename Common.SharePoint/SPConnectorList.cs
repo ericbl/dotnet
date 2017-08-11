@@ -1,6 +1,8 @@
-﻿using Common.Logging;
+﻿using Common.Generic;
+using Common.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Common.SharePoint
@@ -12,6 +14,7 @@ namespace Common.SharePoint
     public class SPConnectorList<T>
          where T : class, ISPListItem, new()
     {
+        private const int MaxItemsInListForSPMessage = 100;
         private readonly SPConnector spConnector;
         private readonly SPListManager<T> spListMgr;
         private readonly string listTitle;
@@ -40,12 +43,13 @@ namespace Common.SharePoint
         /// Read the SharePoint list and generate objects from the list items.
         /// </summary>
         /// <param name="queryFilters">The filters specifying the query.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         /// <returns>
         /// List of created objects.
         /// </returns>
-        public ListWithMetadata<T> ReadAndTransformSPList(ICollection<SPListFilterBase> queryFilters)
+        public ListWithMetadata<T> ReadAndTransformSPList(ICollection<SPListFilterBase> queryFilters, string cultureInfo)
         {
-            return spConnector.PrepareContextAndRunActionOnSP(context => spListMgr.TransformSPListToObjects(context, listTitle, queryFilters));
+            return spConnector.PrepareContextAndRunActionOnSP(context => spListMgr.TransformSPListToObjects(context, listTitle, queryFilters, cultureInfo));
         }
 
         /// <summary>
@@ -65,7 +69,19 @@ namespace Common.SharePoint
         /// <param name="propertyValue">        The property value.</param>
         public void EnqueueUpdateOnePropertyOnListItems(IList<int> idsOflistItemToUpdate, string propertyName, string propertyValue)
         {
-            listQueue.Enqueue(() => UpdateOnePropertyOnListItems(idsOflistItemToUpdate, propertyName, propertyValue));
+            // Split the list in many when over MaxItemsInListForSPMessage items because more may cause exception 'SharePoint message to big'
+            if (idsOflistItemToUpdate != null && idsOflistItemToUpdate.Count > MaxItemsInListForSPMessage)
+            {
+                var chunkLists = idsOflistItemToUpdate.SplitIntoChunks(MaxItemsInListForSPMessage);
+                foreach (var subList in chunkLists)
+                {
+                    EnqueueUpdateOnePropertyOnListItems(subList.ToList(), propertyName, propertyValue);
+                }
+            }
+            else
+            {
+                listQueue.Enqueue(() => UpdateOnePropertyOnListItems(idsOflistItemToUpdate, propertyName, propertyValue));
+            }
         }
 
         /// <summary>

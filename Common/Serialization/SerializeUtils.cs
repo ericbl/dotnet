@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace Common.Serialization
 {
@@ -83,9 +83,12 @@ namespace Common.Serialization
         /// <param name="objects">The objects.</param>
         public static void SerializeTxt<T>(string folderFullPath, string fileName, IEnumerable<T> objects)
         {
-            var serializationParameter = new SerializationParameter<T>(objects, false);
-            var fileParameter = new SerializationFileParameter(folderFullPath, fileName);
-            SerializeTxt(fileParameter, serializationParameter);
+            if (objects != null && objects.Count() > 0)
+            {
+                var serializationParameter = new SerializationParameter<T>(objects, false);
+                var fileParameter = new SerializationFileParameter(folderFullPath, fileName);
+                SerializeTxt(fileParameter, serializationParameter);
+            }
         }
         #endregion
     }

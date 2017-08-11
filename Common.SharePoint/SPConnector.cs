@@ -1,9 +1,7 @@
-﻿using Common.Logging;
-using Common.Windows;
+﻿using Common.Windows;
 using Microsoft.SharePoint.Client;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 
 namespace Common.SharePoint
@@ -47,11 +45,33 @@ namespace Common.SharePoint
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
 
-            NetworkCredential networkCredentials = WebCredentialMgr.GetCredential(parameter.SharePointUserName);
+            string sharePointUser = !string.IsNullOrEmpty(parameter.SharePointUserName) ? parameter.SharePointUserName : Environment.UserName;
+            if (!string.IsNullOrEmpty(sharePointUser))
+                sharePointUser = sharePointUser.ToLowerInvariant();
+            else
+                throw new Exceptions.HostException($"No user defined for SharePoint authentication!");
+
+            // Retrieve the credentials from CredentialManager, but only from the 'Web Credentials'.
+            NetworkCredential networkCredentials = WebCredentialMgr.GetCredential(sharePointUser);
+
+            if (networkCredentials == null)
+                throw new Exceptions.HostException($"No credentials found for user {sharePointUser}. Ensure they are stored in the Credential Manager as Web Credentials!");
+
+            // Create the client context and run the action
             T result = default(T);
             using (var clientContext = new ClientContext(parameter.SharePointUri))
             {
-                clientContext.Credentials = new SharePointOnlineCredentials(networkCredentials.UserName, networkCredentials.SecurePassword);
+                if (networkCredentials != null && !string.IsNullOrEmpty(networkCredentials.UserName))
+                {
+                    clientContext.Credentials = new SharePointOnlineCredentials(networkCredentials.UserName, networkCredentials.SecurePassword);
+                }
+                else
+                {
+                    // default code from MSDN, does not work for SharePoint Online
+                    clientContext.AuthenticationMode = ClientAuthenticationMode.Default;
+                    clientContext.Credentials = CredentialCache.DefaultCredentials;
+                }
+
                 result = action(clientContext);
             }
 

@@ -1,6 +1,4 @@
 ﻿using Common.Exceptions;
-using Common.Extensions;
-using Common.Generic;
 using Common.Logging;
 using System.Collections.Generic;
 using System.Text;
@@ -125,21 +123,7 @@ namespace Common.Strings
         /// <param name="loggerLevel">The logger level.</param>
         public void LogMessages(ILogger logger, LoggerLevel loggerLevel)
         {
-            switch (loggerLevel)
-            {
-                case LoggerLevel.Info:
-                    AllMessages.ForEach(msg => logger.WriteInfo(msg));
-                    break;
-                case LoggerLevel.Warning:
-                    AllMessages.ForEach(msg => logger.WriteWarning(msg));
-                    break;
-                case LoggerLevel.Error:
-                    AllMessages.ForEach(msg => logger.WriteError(msg));
-                    break;
-                default:
-                    logger.WriteError($"Wrong enum value {nameof(loggerLevel)}: {loggerLevel}");
-                    break;
-            }
+            Helper.LogMessages(AllMessages, logger, loggerLevel);
         }
     }
 }

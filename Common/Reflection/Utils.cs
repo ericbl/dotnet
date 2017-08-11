@@ -13,6 +13,20 @@ namespace Common.Reflection
     public static class Utils
     {
         /// <summary>
+        /// Gets all properties of class with the attribute.
+        /// </summary>
+        /// <typeparam name="TAttr">The type of the attribute to consider.</typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns>Collection of propertyInfo</returns>
+        public static IEnumerable<PropertyInfo> GetAllPropertiesOfClassWithAttribute<TAttr>(Type type)
+           where TAttr : Attribute
+        {
+            return from mi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                   let customAttr = (TAttr)Attribute.GetCustomAttribute(mi, typeof(TAttr))
+                   where customAttr != null
+                   select mi;
+        }
+        /// <summary>
         /// Gets all properties of the class.
         /// </summary>
         /// <param name="type">                     The type of the class to read the memberInfo from.</param>
@@ -23,11 +37,12 @@ namespace Common.Reflection
         /// </returns>
         public static IEnumerable<PropertyInfo> GetAllPropertiesOfClass(Type type, bool filterWithIgnoreAttribute)
         {
-            return
-               from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
-               where mi.MemberType == MemberTypes.Property
-               select mi as PropertyInfo;
+            return from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
+                   where mi.MemberType == MemberTypes.Property
+                   select mi as PropertyInfo;
         }
+
+
 
         /// <summary>
         /// Gets all fields and properties of the class.
@@ -40,13 +55,12 @@ namespace Common.Reflection
         /// </returns>
         public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClass(Type type, bool filterWithIgnoreAttribute)
         {
-            return
-                from mi in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-                let ignoreAttr = (IgnoreSerializationAttribute)Attribute.GetCustomAttribute(mi, typeof(IgnoreSerializationAttribute))
-                where (mi.MemberType == MemberTypes.Field || mi.MemberType == MemberTypes.Property) &&
-                    (!filterWithIgnoreAttribute || (filterWithIgnoreAttribute && ignoreAttr == null))
-                orderby type.Equals(mi.DeclaringType) ? 1 : -1
-                select mi;
+            return from mi in type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                   let ignoreAttr = (IgnoreSerializationAttribute)Attribute.GetCustomAttribute(mi, typeof(IgnoreSerializationAttribute))
+                   where (mi.MemberType == MemberTypes.Field || mi.MemberType == MemberTypes.Property) &&
+                       (!filterWithIgnoreAttribute || (filterWithIgnoreAttribute && ignoreAttr == null))
+                   orderby type.Equals(mi.DeclaringType) ? 1 : -1
+                   select mi;
         }
 
         /// <summary>
@@ -60,11 +74,10 @@ namespace Common.Reflection
         /// </returns>
         public static IEnumerable<MemberInfo> GetAllFieldsAndPropertiesOfClassOrdered(Type type, bool filterWithIgnoreAttribute = true)
         {
-            return
-                from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
-                let orderAttr = (ColumnOrderAttribute)Attribute.GetCustomAttribute(mi, typeof(ColumnOrderAttribute))
-                orderby orderAttr == null ? int.MaxValue : orderAttr.Order, mi.Name
-                select mi;
+            return from mi in GetAllFieldsAndPropertiesOfClass(type, filterWithIgnoreAttribute)
+                   let orderAttr = (ColumnOrderAttribute)Attribute.GetCustomAttribute(mi, typeof(ColumnOrderAttribute))
+                   orderby orderAttr == null ? int.MaxValue : orderAttr.Order, mi.Name
+                   select mi;
         }
 
         /// <summary>
