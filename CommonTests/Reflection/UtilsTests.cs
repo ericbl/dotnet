@@ -27,8 +27,8 @@ namespace Common.Reflection.Tests
 
             Assert.IsNotNull(propertiesChanged);
             Assert.IsTrue(propertiesChanged.Count == 3);
-            Assert.IsTrue(propertiesChanged[0].PropertyName == "FunctionAssignment.Function.Description");
-            Assert.IsTrue(propertiesChanged[1].PropertyName == "FunctionAssignment.Function.Id");
+            Assert.IsTrue(propertiesChanged[0].PropertyName == "FunctionAssignment.OrgaFunction.Description");
+            Assert.IsTrue(propertiesChanged[1].PropertyName == "FunctionAssignment.OrgaFunction.Id");
             Assert.IsTrue(propertiesChanged[2].PropertyName == "FunctionAssignment.Level");
         }
 

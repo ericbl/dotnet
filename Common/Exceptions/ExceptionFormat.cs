@@ -164,7 +164,7 @@ namespace Common.Exceptions
             if (!allSerializable)
             {
                 // Create a new Exception for not serializable exceptions!
-                ex = new Exception(FormatException(ex));
+                ex = new HostException(FormatException(ex));
             }
 
             // Serialize the exception

@@ -1,5 +1,4 @@
-﻿using Common.Strings;
-using System;
+﻿using System;
 
 namespace Common.Logging
 {
@@ -67,9 +66,17 @@ namespace Common.Logging
         {
             if (!isStart)
                 StopTimeCounterLogAndRestart(startInitial, "The whole process");
-            startInitial = DateTime.Now;
+            ResetStartInitial();
             string action = isStart ? "starting" : "ending";
             LogCallerActivityOnStartInitial(action, logAlsoOnEventLog);
+        }
+
+        /// <summary>
+        /// Resets the start initial.
+        /// </summary>
+        public void ResetStartInitial()
+        {
+            startInitial = DateTime.Now;
         }
 
         /// <summary>

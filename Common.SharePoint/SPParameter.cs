@@ -13,7 +13,7 @@
         /// <param name="sharepointUri">       The SharePoint URI.</param>
         /// <param name="sharePointUserName">  Name of the share point user.</param>
         /// <param name="sharePointFolderPath">The default approver email.</param>
-        public SPParameter(string sharepointUri, string sharePointUserName, string sharePointFolderPath)
+        public SPParameter(string sharepointUri, string sharePointUserName, string sharePointFolderPath = null)
         {
             if (sharepointUri == null)
                 throw new ArgumentNullException(nameof(sharepointUri));

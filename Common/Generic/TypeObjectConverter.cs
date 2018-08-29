@@ -156,7 +156,7 @@ namespace Common.Generic
         /// </summary>
         /// <param name="destinationType">Type of the property.</param>
         /// <param name="propertyValue">The property string.</param>
-        /// <param name="formatProvider">The format provider. CurrentCulture per default when let null</param>
+        /// <param name="formatProvider">The format provider. CurrentCulture per default when null</param>
         /// <returns>
         /// The converted property or null.
         /// </returns>
@@ -164,8 +164,9 @@ namespace Common.Generic
         {
             if (formatProvider == null)
             {
-                formatProvider = System.Threading.Thread.CurrentThread.CurrentCulture; // default value of ChangeType when formatProvider is not set!
+                formatProvider = Strings.Helper.GetProviderFromCultureInfo(null); // default value of ChangeType when formatProvider is not set!
             }
+
             if (!string.IsNullOrEmpty(propertyValue))
             {
                 Type underlyingType = Nullable.GetUnderlyingType(destinationType);

@@ -21,6 +21,8 @@ namespace Common.Strings
         /// </returns>
         public static string LatinizeAndConvertToASCII(this string str, bool keepSpace = false)
         {
+            if (string.IsNullOrEmpty(str))
+                return str;
             str = str.LatinizeGermanCharacters().ConvertWesternEuropeanToASCII();
             return keepSpace ? str : str.RemoveSpace();
         }

@@ -105,10 +105,10 @@ namespace Common.Strings
         }
 
         /// <summary>
-        /// Gets the provider from culture information.
+        /// Gets the provider from the culture information. Take current culture if no parameter
         /// </summary>
-        /// <param name="cultureInfo">The culture information.</param>
-        /// <returns></returns>
+        /// <param name="cultureInfo">The culture information. If null, consider the current culture.</param>
+        /// <returns>the format provider</returns>
         public static IFormatProvider GetProviderFromCultureInfo(string cultureInfo)
         {
             IFormatProvider provider;
@@ -260,16 +260,16 @@ namespace Common.Strings
         }
 
         /// <summary>
-        /// Compare both string, forcing empty reference as null.
+        /// Compare both string, forcing empty source as null.
         /// </summary>
-        /// <param name="referenceValue">The reference value.</param>
+        /// <param name="sourceValue">The source value.</param>
         /// <param name="currentValue">The current value.</param>
         /// <returns><c>True</c> if equals, <c>false</c> otherwise</returns>
-        public static bool AreEquals(string referenceValue, string currentValue)
+        public static bool AreEquals(string sourceValue, string currentValue)
         {
-            if (string.IsNullOrEmpty(referenceValue))
-                referenceValue = null; // force empty == null
-            return currentValue == referenceValue;
+            if (string.IsNullOrEmpty(sourceValue))
+                sourceValue = null; // force empty == null
+            return currentValue == sourceValue;
         }
         #endregion
 
