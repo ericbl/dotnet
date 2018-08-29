@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2016
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{84140258-AD90-4FC1-BE1A-03442FAB18D6}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.OpenXml", "Common.OpenXml\Common.OpenXml.csproj", "{724DBD80-8C4E-45C2-AE9F-4D1A773511DF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.Service", "Common.Service\Common.Service.csproj", "{3B9A076F-B30B-4A54-8987-35D23E27AC03}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.Azure", "Common.Azure\Common.Azure.csproj", "{0A705B4A-7B83-46EA-AC3F-20E10D05DEA2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,11 +71,16 @@ Global
 		{3B9A076F-B30B-4A54-8987-35D23E27AC03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B9A076F-B30B-4A54-8987-35D23E27AC03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B9A076F-B30B-4A54-8987-35D23E27AC03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A705B4A-7B83-46EA-AC3F-20E10D05DEA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A705B4A-7B83-46EA-AC3F-20E10D05DEA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A705B4A-7B83-46EA-AC3F-20E10D05DEA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A705B4A-7B83-46EA-AC3F-20E10D05DEA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		EnterpriseLibraryConfigurationToolBinariesPathV6 = packages\EnterpriseLibrary.Common.6.0.1304.0\lib\NET45;packages\EnterpriseLibrary.Logging.6.0.1304.0\lib\NET45
+		SolutionGuid = {80599252-BFA5-475F-97CF-196AEFF09843}
 	EndGlobalSection
 EndGlobal
