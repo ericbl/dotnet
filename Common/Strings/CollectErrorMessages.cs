@@ -1,5 +1,4 @@
-﻿using Common.Exceptions;
-using Common.Logging;
+﻿using Common.Logging;
 using Common.Serialization;
 using System;
 using System.Collections.Generic;
@@ -56,7 +55,7 @@ namespace Common.Strings
         /// <param name="ex">The exception.</param>
         public void AddException(Exception ex)
         {
-            AddErrorMessage(ExceptionFormat.FormatException(ex));
+            AddErrorMessage(ex.ToString());
         }
 
         /// <summary>

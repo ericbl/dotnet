@@ -70,7 +70,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteWarning(Exception ex)
         {
-            Trace.TraceWarning(LoggerBase.FormatException(ex));
+            Trace.TraceWarning(ex.ToString());
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteError(Exception ex)
         {
-            Trace.TraceError(LoggerBase.FormatException(ex));
+            Trace.TraceError(ex.ToString());
         }
 
         /// <summary>

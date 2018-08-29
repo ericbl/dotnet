@@ -1,7 +1,9 @@
 ﻿using Common.Logging;
+using Common.Strings;
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Common.Exceptions
 {
@@ -11,52 +13,111 @@ namespace Common.Exceptions
     public static class Utils
     {
         /// <summary>
-        /// Processes the exception.
+        /// Logs the date and empty line.
+        /// </summary>
+        /// <param name="memberName">Name of the member.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        /// <param name="sourceLineNumber">The source line number.</param>
+        public static void LogDateAndEmptyLine(
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
+        {
+            Trace.WriteLine(Environment.NewLine + DateTime.Now.ToFileNameString(true, true));
+            Trace.WriteLine("Starting... " + PrepareMessage(memberName));
+        }
+
+        /// <summary>
+        /// Get a string from the exception with source, method, stacktrace and inner exceptions.
         /// </summary>
         /// <param name="ex">The exception.</param>
-        /// <param name="serializeMsg">The function to serialize the error message or show it on the UI. Input parameters: error msg.</param>
         /// <param name="message">The input message.</param>
-        /// <param name="defaultLogger">The default logger.</param>
-        /// <param name="extraLogger">(Optional) The extra logger.</param>
-        public static void ProcessException(Exception ex, Action<string> serializeMsg, string message = "", ILogger defaultLogger = null, ILogger extraLogger = null)
+        /// <param name="traceError">if set to <c>true</c> [trace error].</param>
+        /// <param name="memberName">Name of the member.</param>
+        /// <param name="sourceFilePath">The source file path.</param>
+        /// <param name="sourceLineNumber">The source line number.</param>
+        /// <returns></returns>
+        public static string ToDetailedString(this Exception ex, string message = "",
+            bool traceError = false,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
         {
             if (ex == null)
             {
-                ProcessException(new ArgumentNullException(nameof(ex)), null, defaultLogger, extraLogger);
-                return;
+                if (traceError)
+                    ToDetailedString(new ArgumentNullException(nameof(ex)));
+                return null;
             }
 
             // Get message
-            message += Environment.NewLine + ex.Message + Environment.NewLine + ex.StackTrace;
+            message += GetExceptionMessageAndStackTrace(ex, true);
             // Prepare the message to log
-            string siteMethodName = GetMethodNameFromSite(ex);
-            var fullMsg = "Exception in " + siteMethodName;
-            // Get info from source code: useless since duplicate from  ex.StackTrace
-            //string stackTraceInfo = string.Empty;
-            //var stackTrace = new StackTrace(ex, true);
-            //stackTrace.GetFrames().ForEach(frame => stackTraceInfo += "from " + GetMethodAndFileNameAndLineNrFromStackFrame(frame) + Environment.NewLine);
-            //if (!string.IsNullOrEmpty(stackTraceInfo))
-            //{
-            //    fullMsg += stackTraceInfo;
-            //}
-
+            // from MSDN: "If the Source property is not set explicitly, the runtime automatically sets it to the name of the assembly in which the exception originated"
+            var fullMsg = "Exception" + PrepareMessage(memberName, ex.Source, sourceFilePath, sourceLineNumber);
             fullMsg += message;
-            if (defaultLogger == null)
-            {
+            if (traceError)
                 Trace.TraceError(fullMsg);
-            }
-            else
-            {
-                defaultLogger.WriteError(fullMsg);
-            }
 
-            if (extraLogger != null)
-            {
-                extraLogger.WriteError(fullMsg);
-            }
-
-            serializeMsg?.Invoke(fullMsg);
+            return fullMsg;
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance: return the MessageText only
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        private static string PrepareMessage(string memberName, string source = null, string sourceFilePath = null, int sourceLineNumber = 0)
+        {
+            string fullmsg = string.Empty;
+            if (!string.IsNullOrEmpty(memberName))
+            {
+                fullmsg += " from " + memberName;
+            }
+            if (!string.IsNullOrEmpty(source))
+            {
+                fullmsg += " in " + source;
+            }
+            if (!string.IsNullOrEmpty(sourceFilePath))
+            {
+                fullmsg += " in " + sourceFilePath;
+            }
+            if (sourceLineNumber > 0)
+            {
+                fullmsg += " line " + sourceLineNumber;
+            }
+
+            return fullmsg;
+        }
+
+        /// <summary>
+        /// Gets the exception Message and stack trace.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        /// <param name="includeInnerException">if set to <c>true</c> include inner exception recursively.</param>
+        /// <returns>
+        /// Concatenated string of exception message and stack trace
+        /// </returns>
+        public static string GetExceptionMessageAndStackTrace(Exception exception,
+            bool includeInnerException)
+        {
+            string result = string.Empty;
+            if (!string.IsNullOrEmpty(exception.Message))
+                result += Environment.NewLine + exception.Message;
+            if (!string.IsNullOrEmpty(exception.StackTrace))
+                result += Environment.NewLine + exception.StackTrace;
+
+            if (includeInnerException && exception.InnerException != null)
+            {
+                // recursive parsing of inner exception
+                result += Environment.NewLine + "InnerException: "
+                    + GetExceptionMessageAndStackTrace(exception.InnerException, includeInnerException);
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Processes the exception.

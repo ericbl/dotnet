@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Principal;
 using System.Text;
 
 namespace Common.Exceptions
@@ -13,104 +11,6 @@ namespace Common.Exceptions
     /// </summary>
     public static class ExceptionFormat
     {
-        /// <summary>
-        /// The exception formatter
-        /// </summary>
-        private static readonly string ExceptionFormatter =
-            "Message:" + Environment.NewLine + "{0}" + Environment.NewLine + Environment.NewLine +
-            "Stacktrace:" + Environment.NewLine + "{1}" + Environment.NewLine + Environment.NewLine +
-            "Type:" + Environment.NewLine + "{2}";
-
-        private static readonly string ExceptionDataFormatter =
-            "Key  : {0}" + Environment.NewLine +
-            "Value: {1}" + Environment.NewLine + Environment.NewLine;
-
-        private static readonly string OleDbExceptionFormatter =
-            "Index: {0}" + Environment.NewLine +
-            "Message: {1}" + Environment.NewLine +
-            "NativeError: {2}" + Environment.NewLine +
-            "Source: {3}" + Environment.NewLine +
-            "SQLState: {4}";
-
-        private static readonly string IdentityFormater = "Name: {0}" + Environment.NewLine + "AuthentificationType: {1}";
-
-        /// <summary>
-        /// Format the exception for logging or trace by keeping the message, stack trace, type and inner exceptions
-        /// </summary>
-        /// <param name="ex">The exception.</param>
-        /// <returns>
-        /// The formatted exception.
-        /// </returns>
-        public static string FormatException(Exception ex)
-        {
-            Exception e = ex;
-            var sb = new StringBuilder();
-            int counter = 0;
-            while (e != null && counter < 10)
-            {
-                sb.AppendFormat(ExceptionFormatter, e.Message, e.StackTrace, e.GetType());
-                foreach (DictionaryEntry item in e.Data)
-                {
-                    sb.AppendFormat(ExceptionDataFormatter, item.Key, item.Value);
-                }
-
-                if (e.GetType() == typeof(System.Data.OleDb.OleDbException))
-                {
-                    var oleEx = (System.Data.OleDb.OleDbException)e;
-                    if (oleEx.Errors != null)
-                    {
-                        for (int idx = 0; idx < oleEx.Errors.Count; idx++)
-                        {
-                            sb.AppendFormat(OleDbExceptionFormatter, idx, oleEx.Errors[idx].Message, oleEx.Errors[idx].NativeError, oleEx.Errors[idx].Source, oleEx.Errors[idx].SQLState);
-                        }
-                    }
-                }
-
-                System.Reflection.ReflectionTypeLoadException reflectionEx = e as System.Reflection.ReflectionTypeLoadException;
-                if (reflectionEx != null)
-                {
-                    foreach (var loaderEx in reflectionEx.LoaderExceptions)
-                    {
-                        sb.AppendFormat(ExceptionFormatter, loaderEx.Message, loaderEx.StackTrace, loaderEx.GetType());
-                    }
-                }
-
-                e = e.InnerException;
-                if (e != null)
-                {
-                    sb.AppendFormat("{0}{0}Inner Exception:{0}{0}", Environment.NewLine);
-                }
-
-                counter++;
-            }
-            if (counter == 10 && e != null)
-            {
-                sb.AppendLine();
-                sb.AppendLine("No further Inner-Exceptions!");
-            }
-
-            sb.AppendLine();
-            // Gebe Zeitpunkt aus um Logfiles auswerden zu können
-            sb.AppendFormat("Time: {1}{0}", Environment.NewLine, DateTime.Now);
-            sb.AppendLine();
-            // Gebe Identität aus, um Sicherheitsprobleme zu untersuchen 
-            sb.AppendLine(IdentityDescription());
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Get information about the current Windows Identity (user) running the process.
-        /// </summary>
-        /// <returns>
-        /// A string representing the user
-        /// </returns>
-        public static string IdentityDescription()
-        {
-            var identity = WindowsIdentity.GetCurrent();
-            return identity != null ? string.Format(IdentityFormater, identity.Name, identity.AuthenticationType) : null;
-        }
-
         /// <summary>
         /// Format key.
         /// </summary>
@@ -164,7 +64,7 @@ namespace Common.Exceptions
             if (!allSerializable)
             {
                 // Create a new Exception for not serializable exceptions!
-                ex = new HostException(FormatException(ex));
+                ex = new HostException(ex.ToString());
             }
 
             // Serialize the exception

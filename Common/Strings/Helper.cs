@@ -30,7 +30,7 @@ namespace Common.Strings
         }
 
         /// <summary>
-        /// Gets the current date as string compatible for a file name, <seealso cref="ToFileNameString(DateTime)"/>.
+        /// Gets the current date as string compatible for a file name, <seealso cref="ToFileNameString(DateTime, bool, bool)"/>.
         /// </summary>
         /// <returns>
         /// The current date file name string.
@@ -41,23 +41,37 @@ namespace Common.Strings
         }
 
         /// <summary>
-        /// Format the date as yyyy-MM-ddTHH-mm.
+        /// Format the date as yyyy-MM-dd(THH-mm(-ss)).
         /// </summary>
         /// <param name="date">The date.</param>
-        /// <returns>A string representation of the date</returns>
-        public static string ToFileNameString(this DateTime date)
+        /// <param name="includeHoursMin">if set to <c>true</c> include hours and minutes.</param>
+        /// <param name="includeSeconds">if set to <c>true</c> include seconds.</param>
+        /// <returns>
+        /// A string representation of the date
+        /// </returns>
+        public static string ToFileNameString(this DateTime date, bool includeHoursMin = true, bool includeSeconds = true)
         {
-            return date.ToString("yyyy-MM-ddTHH-mm");
+            string format = "yyyy-MM-dd";
+            if (includeHoursMin)
+            {
+                format += "THH-mm";
+                if (includeSeconds)
+                    format += "-ss";
+            }
+
+            return date.ToString(format);
         }
 
         /// <summary>
-        /// Format the date as yyyy-MM-ddTHH-mm.
+        /// Format the date as yyyy-MM-dd(THH-mm(-ss)).
         /// </summary>
         /// <param name="date">The date.</param>
+        /// <param name="includeHoursMin">if set to <c>true</c> include hours and minutes.</param>
+        /// <param name="includeSeconds">if set to <c>true</c> include seconds.</param>
         /// <returns>A string representation of the date</returns>
-        public static string ToFileNameString(this DateTime? date)
+        public static string ToFileNameString(this DateTime? date, bool includeHoursMin = true, bool includeSeconds = true)
         {
-            return date.HasValue ? date.Value.ToFileNameString() : string.Empty;
+            return date.HasValue ? date.Value.ToFileNameString(includeHoursMin, includeSeconds) : string.Empty;
         }
 
         /// <summary>

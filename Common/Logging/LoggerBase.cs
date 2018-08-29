@@ -1,5 +1,4 @@
-﻿using Common.Exceptions;
-using System;
+﻿using System;
 
 namespace Common.Logging
 {
@@ -42,7 +41,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteWarning(Exception ex)
         {
-            WriteWarning(FormatException(ex));
+            WriteWarning(ex.ToString());
         }
 
         /// <summary>
@@ -72,7 +71,7 @@ namespace Common.Logging
         /// <param name="ex">The exception to be logged</param>
         public void WriteError(Exception ex)
         {
-            WriteError(FormatException(ex));
+            WriteError(ex.ToString());
         }
 
         /// <summary>
@@ -105,7 +104,7 @@ namespace Common.Logging
         /// <returns>the formatted message</returns>
         internal static string FormatLogEntry(Exception ex, string format, params object[] parameter)
         {
-            return FormatLogEntry(format, parameter) + Environment.NewLine + FormatException(ex);
+            return FormatLogEntry(format, parameter) + Environment.NewLine + ex.ToString();
         }
 
         /// <summary>
@@ -117,16 +116,6 @@ namespace Common.Logging
         internal static string FormatLogEntry(string format, params object[] parameter)
         {
             return string.Format(format, parameter);
-        }
-
-        /// <summary>
-        /// Formats the exception.
-        /// </summary>
-        /// <param name="ex">The exception.</param>
-        /// <returns>the formatted message</returns>
-        internal static string FormatException(Exception ex)
-        {
-            return ExceptionFormat.FormatException(ex);
         }
     }
 }
